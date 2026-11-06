@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CashO</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>CashO</h1>
+<p id="msg">Opening CashO… · جارٍ فتح CashO…</p>
+<p><a id="open" href="#">Open in the app · افتح في التطبيق</a></p>
+<p class="mut">If nothing happens, CashO is not installed on this phone yet. · إذا لم يحدث شيء فلم يتم تثبيت CashO على هذا الجوال بعد.</p>
+</main>
+<script>
+  // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>
+  var q = new URLSearchParams(location.search), kind = ["p", "s", "v"].find(function (k) { return q.get(k); });
+  var id = kind && q.get(kind);
+  if (id && /^[0-9a-f-]{36}$/i.test(id)) {
+    var app = "ocash://" + kind + "/" + id;
+    document.getElementById("open").href = app;
+    location.href = app;
+  } else { document.getElementById("msg").textContent = "This link is not valid. · هذا الرابط غير صالح."; }
+</script>
+</body>
+</html>
