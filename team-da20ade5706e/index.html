@@ -316,6 +316,25 @@ const TABS = {
     v.append(sw("vehicles_enabled", r.enabled, "Vehicle and big-item listings (selling)", "Fixed price or no price. When off, the app hides vehicles and nobody can list."));
     v.append(sw("auctions_vehicles_enabled", r.auctions, "Vehicle AUCTIONS (needs permits)", "Keep OFF until the permits for auctioning cars are clear. Sellers then only see fixed price and no price."));
     v.append(sw("vehicle_auto_approve", r.auto, "Auto-approve listings", "ON: a paid listing goes live at once. OFF: a helper approves each one below. You can always take a live listing down."));
+    if (isOwner) {   // deposit auctions: deals that need a decision and deposits owed to sellers (owner only)
+      const dl = await call("admin", { action: "vehicle_deals" });
+      v.append(el("h3", {}, `Vehicle deals in progress (${dl.deals.length})`));
+      if (!dl.deals.length) v.append(el("p", { class: "mut" }, "None."));
+      for (const d of dl.deals) v.append(el("div", { class: "card" },
+        el("b", {}, `${d.title} · ${d.status.toUpperCase()}`),
+        el("div", { class: "mut" }, `Seller ${d.seller} · winner ${d.winner || "?"} · bid ${sar(d.current_halalas || 0)} · deposit ${sar(d.deposit_halalas || 0)} · deadline ${d.deal_deadline ? when(d.deal_deadline) : "-"} · seller ${d.seller_done_at ? "pressed Done" : "not yet"} · buyer ${d.buyer_done_at ? "pressed Done" : "not yet"}`),
+        d.status === "closing" ? null : el("div", { class: "mut" }, "Decide only when someone asks or the deal is in dispute. Read the chat or ask both people first."),
+        d.status === "closing" ? null : el("div", { class: "row" },
+          el("button", { class: "danger", onclick: () => confirm(`Buyer at fault? The seller is owed the deposit (minus CashO's share) and the buyer gets a strike.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "buyer_fault" }, "Done: seller owed, buyer strike") }, "Buyer at fault"),
+          el("button", { class: "danger", onclick: () => confirm(`Seller at fault? The deposit is refunded to the buyer and the seller gets a strike.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "seller_fault" }, "Done: deposit refunded, seller strike") }, "Seller at fault"),
+          el("button", { onclick: () => confirm(`No one at fault? The deposit is refunded to the buyer, no strikes.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "no_fault" }, "Done: deposit refunded") }, "No fault: refund buyer"))));
+      v.append(el("h3", {}, `Deposits owed to sellers (${dl.owed.length})`));
+      if (!dl.owed.length) v.append(el("p", { class: "mut" }, "None."));
+      for (const o of dl.owed) v.append(el("div", { class: "card" },
+        el("b", {}, `${sar(o.payout_halalas)} to ${o.full_name || o.seller}`),
+        el("div", { class: "mut" }, `${o.title} · ${o.closed_reason} · IBAN ${o.iban || "?"}${o.iban_verified ? "" : " (NOT VERIFIED: verify it in the Sellers tab first)"}`),
+        el("div", { class: "row" }, el("button", { class: "primary", onclick: () => confirm(`Have you transferred ${sar(o.payout_halalas)} to ${o.full_name}?`) && act("admin", { action: "vehicle_paid", id: o.id }, "Marked as paid") }, "Mark paid"))));
+    }
     const wait = r.vehicles.filter((x) => x.status === "pending_review"), rest = r.vehicles.filter((x) => x.status !== "pending_review");
     v.append(el("h3", {}, `Waiting for approval (${wait.length})`));
     if (!wait.length) v.append(el("p", { class: "mut" }, "None."));
