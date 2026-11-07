@@ -240,6 +240,25 @@ const TABS = {
     }
   },
 
+  async Auctions(v) {
+    const r = await call("admin", { action: "auctions_overview" });
+    v.append(el("div", { class: "card" },
+      el("b", {}, r.enabled ? "Auctions for normal items are ON" : "Auctions for normal items are OFF"),
+      el("div", { class: "mut" }, "When off, nobody can start or bid on an auction and the app hides the buttons. Running auctions keep their holds; switch off only when none are running."),
+      isOwner ? el("div", { class: "row" }, el("button", { class: r.enabled ? "danger" : "primary", onclick: () => confirm(r.enabled ? "Switch auctions OFF for everyone?" : "Switch auctions ON for everyone?") && act("admin", { action: "auctions_switch", on: !r.enabled }, r.enabled ? "Auctions are off" : "Auctions are on") }, r.enabled ? "Switch OFF" : "Switch ON")) : el("div", { class: "mut" }, "Only the owner can switch it.")));
+    v.append(el("h3", {}, `Running auctions (${r.open.length})`));
+    if (!r.open.length) v.append(el("p", { class: "mut" }, "None."));
+    for (const a of r.open) v.append(el("div", { class: "card" },
+      el("b", {}, a.title || "(product)"),
+      el("div", { class: "mut" }, `${a.seller || "?"} (@${a.username || "?"}) · ${a.status} · ${a.bid_count} bids · ${a.current_halalas == null ? "start " + sar(a.start_halalas) : "highest " + sar(a.current_halalas)} · ends ${when(a.ends_at)}`)));
+    v.append(el("h3", {}, `Sellers with strikes (${r.strikes.length})`));
+    v.append(el("p", { class: "mut" }, "A seller gets a strike for cancelling an auction after someone bid. At 3 strikes they cannot start auctions."));
+    if (!r.strikes.length) v.append(el("p", { class: "mut" }, "None."));
+    for (const x of r.strikes) v.append(el("div", { class: "card" },
+      el("b", {}, `${x.seller || "?"} (@${x.username || "?"}): ${x.strikes} strike${x.strikes === 1 ? "" : "s"}`),
+      el("div", { class: "row" }, el("button", { class: "primary", onclick: () => confirm(`Clear all strikes for ${x.seller}?`) && act("admin", { action: "clear_strikes", seller_id: x.seller_id }, "Strikes cleared") }, "Clear strikes"))));
+  },
+
   async Team(v) {
     const { helpers } = await call("admin", { action: "helpers" });
     const { log } = await call("admin", { action: "team_log" });
