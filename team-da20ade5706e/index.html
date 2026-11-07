@@ -311,10 +311,11 @@ const TABS = {
 
   async Vehicles(v) {
     const r = await call("admin", { action: "vehicles", status: "all" });
-    v.append(el("div", { class: "card" },
-      el("b", {}, r.enabled ? "Vehicles and big items are ON" : "Vehicles and big items are OFF"),
-      el("div", { class: "mut" }, "Keep OFF until the permits are clear. When off, the app hides vehicle listings and nobody can list."),
-      isOwner ? el("div", { class: "row" }, el("button", { class: r.enabled ? "danger" : "primary", onclick: () => confirm(r.enabled ? "Switch vehicles OFF for everyone?" : "Switch vehicles ON for everyone?") && act("admin", { action: "vehicles_switch", on: !r.enabled }, r.enabled ? "Vehicles are off" : "Vehicles are on") }, r.enabled ? "Switch OFF" : "Switch ON")) : el("div", { class: "mut" }, "Only the owner can switch it.")));
+    const sw = (key, on, title, help) => el("div", { class: "card" }, el("b", {}, `${title}: ${on ? "ON" : "OFF"}`), el("div", { class: "mut" }, help),
+      isOwner ? el("div", { class: "row" }, el("button", { class: on ? "danger" : "primary", onclick: () => confirm(`${on ? "Switch OFF" : "Switch ON"}: ${title}?`) && act("admin", { action: "vehicle_setting", key, on: !on }, "Saved") }, on ? "Switch OFF" : "Switch ON")) : el("div", { class: "mut" }, "Only the owner can switch it."));
+    v.append(sw("vehicles_enabled", r.enabled, "Vehicle and big-item listings (selling)", "Fixed price or no price. When off, the app hides vehicles and nobody can list."));
+    v.append(sw("auctions_vehicles_enabled", r.auctions, "Vehicle AUCTIONS (needs permits)", "Keep OFF until the permits for auctioning cars are clear. Sellers then only see fixed price and no price."));
+    v.append(sw("vehicle_auto_approve", r.auto, "Auto-approve listings", "ON: a paid listing goes live at once. OFF: a helper approves each one below. You can always take a live listing down."));
     const wait = r.vehicles.filter((x) => x.status === "pending_review"), rest = r.vehicles.filter((x) => x.status !== "pending_review");
     v.append(el("h3", {}, `Waiting for approval (${wait.length})`));
     if (!wait.length) v.append(el("p", { class: "mut" }, "None."));
@@ -332,7 +333,9 @@ const TABS = {
     }
     v.append(el("h3", {}, `Other listings (${rest.length})`));
     for (const x of rest) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.status}`),
-      el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.sale_type} · fee ${sar(x.fee_halalas)}${x.fee_payment_id && !x.fee_refunded_at && ["rejected", "cancelled"].includes(x.status) ? " · FEE NOT REFUNDED YET" : ""}`)));
+      el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.sale_type} · fee ${sar(x.fee_halalas)}${x.fee_payment_id && !x.fee_refunded_at && ["rejected", "cancelled"].includes(x.status) ? " · FEE NOT REFUNDED YET" : ""}`),
+      x.status === "live" ? el("div", { class: "row" }, ...x.photo_urls.slice(0, 3).map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:60px;border-radius:6px" }))),
+        el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "vehicle_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
   },
 
   async Team(v) {
