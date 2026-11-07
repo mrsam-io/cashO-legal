@@ -139,7 +139,7 @@ const TABS = {
     const { reports } = await call("admin", { action: "reports" });
     v.append(el("p", { class: "mut" }, "Reports from users. Reply to serious ones within 24 hours (Apple expects fast action on abusive content)."));
     if (!reports.length) v.append(el("p", {}, "No open reports."));
-    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a video comment", product: "a product" };
+    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a video comment", product: "a product", vehicle: "a vehicle listing", vehicle_message: "a vehicle chat message" };
     for (const r of reports) {
       const who = `${r.seller_name} (@${r.seller_username})`;
       v.append(el("div", { class: "card" },
@@ -147,12 +147,14 @@ const TABS = {
         el("div", { class: "mut" }, `"${r.snapshot}"`),
         r.target_type === "product" && r.product_photo ? el("img", { src: r.product_photo, style: "width:120px;height:120px;object-fit:cover;border-radius:8px;display:block;margin:8px 0" }) : null,
         r.target_type === "product" && r.product_removed ? el("div", { class: "bad" }, "This product is already removed or gone.") : null,
+        r.target_type === "vehicle" && r.vehicle_photo ? el("img", { src: r.vehicle_photo, style: "width:120px;height:120px;object-fit:cover;border-radius:8px;display:block;margin:8px 0" }) : null,
+        r.target_type === "vehicle" && !r.vehicle_live ? el("div", { class: "bad" }, `This listing is not live (${r.vehicle_status}).`) : null,
         r.target_type === "video" ? (r.video_url ? el("video", { src: r.video_url, controls: "", playsinline: "", preload: "metadata", style: "max-width:260px;max-height:360px;display:block;margin:8px 0" }) : el("div", { class: "mut" }, "The video was already removed.")) : null,
         r.note ? el("div", {}, `Reporter's note: ${r.note}`) : null,
         el("div", { class: "mut" }, `By @${r.reporter_username} · ${when(r.created_at)} · ${r.open_against_seller} open report(s) against this person`),
         el("div", {}, `The reported person is ${r.role}.` + (r.is_seller ? " They also have a seller account" + (r.seller_suspended ? " (suspended)." : ".") : " They have no seller account.")),
         el("div", { class: "row" },
-          ["message", "order_message"].includes(r.target_type) ? el("button", { onclick: () => confirm("Delete this message?") && act("admin", { action: "review_report", id: r.id, report_action: "delete_message" }, "Message deleted") }, "Delete message") : null,
+          ["message", "order_message", "vehicle_message"].includes(r.target_type) ? el("button", { onclick: () => confirm("Delete this message?") && act("admin", { action: "review_report", id: r.id, report_action: "delete_message" }, "Message deleted") }, "Delete message") : null,
           r.target_type === "review" ? el("button", { class: "danger", onclick: () => confirm("Remove this review for good?") && act("admin", { action: "review_report", id: r.id, report_action: "remove_review" }, "Review removed") }, "Remove review") : null,
           r.target_type === "comment" ? el("button", { class: "danger", onclick: () => confirm("Remove this comment for good?") && act("admin", { action: "review_report", id: r.id, report_action: "remove_comment" }, "Comment removed") }, "Remove comment") : null,
           r.target_type === "video" && r.video_url ? el("button", { class: "danger", onclick: () => confirm("Remove this video for good? The seller can post a new one.") && act("admin", { action: "review_report", id: r.id, report_action: "remove_video" }, "Video removed") }, "Remove video") : null,
@@ -163,6 +165,7 @@ const TABS = {
             return [sel, el("label", {}, strike, " strike"),
               el("button", { class: "danger", onclick: () => confirm(`Remove this product (${reasonsP[sel.value]})${strike.checked ? " and give the seller a strike" : ""}? Paid orders that are not shipped yet are refunded.`) && removeProductFlow({ report_id: r.id, reason: sel.value, strike: strike.checked }) }, "Remove product")];
           })() : []),
+          r.target_type === "vehicle" && r.vehicle_live ? el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The listing fee is kept."); if (!why || !why.trim()) return; const strike = confirm("Also give the seller a strike?"); act("admin", { action: "review_report", id: r.id, report_action: "remove_vehicle", reason: why.trim(), strike }, "Listing taken down"); } }, "Take down listing") : null,
           r.is_seller && !r.seller_suspended ? el("button", { class: "danger", onclick: () => confirm(`Suspend the SELLING of ${who}? They cannot sell or go live (their live ends now). They can still buy and chat. Undo in the Sellers tab.`) && act("admin", { action: "review_report", id: r.id, report_action: "suspend" }, "Selling suspended") }, "Suspend selling") : null,
           el("button", { class: "danger", onclick: async () => { if (!confirm(`BAN the account of ${who}? They cannot sign in at all until you unban them (below). Their orders and data stay.`)) return;
             await act("admin", { action: "ban_user", user_id: r.seller_id, banned: true }, "Account banned"); await act("admin", { action: "review_report", id: r.id, report_action: "actioned" }, "Account banned and report closed"); } }, "Ban account"),
