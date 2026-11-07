@@ -230,6 +230,11 @@ const TABS = {
   async Money(v) {
     const m = await call("admin", { action: "money" });
     const card = (title, value, help, cls = "") => el("div", { class: "card" }, el("div", { class: "mut" }, title), el("b", { class: cls, style: "font-size:20px" }, value), el("div", { class: "mut" }, help));
+    const cf = await call("admin", { action: "coffee" });
+    v.append(el("h3", {}, "Support CashO button"), el("div", { class: "card" },
+      el("b", {}, `"Buy us a coffee" button in the Profile page: ${cf.enabled ? "ON" : "OFF"}`),
+      el("div", { class: "mut" }, `Voluntary gifts by card (SAR 5 to 500). No refunds. Given so far: ${cf.count} gift(s), ${sar(cf.total_halalas)}. Keep it OFF until you are sure about Apple's rules on tips (App Review may require Apple's own in-app purchase for gifts to the developer).`),
+      el("div", { class: "row" }, el("button", { class: cf.enabled ? "danger" : "primary", onclick: () => confirm(cf.enabled ? "Switch the Support CashO button OFF?" : "Switch the Support CashO button ON for everyone?") && act("admin", { action: "coffee", on: !cf.enabled }, "Saved") }, cf.enabled ? "Switch OFF" : "Switch ON"))));
     v.append(
       el("h3", {}, "Your profit"),
       card("Commission earned (completed orders)", sar(m.commission_earned), "The 15% you keep. Counted only when the claim window is over and the sale is final.", "ok"),
