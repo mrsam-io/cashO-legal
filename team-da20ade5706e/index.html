@@ -41,6 +41,7 @@ const BASE = "https://kzamtrkxckztyxhcypqk.supabase.co/functions/v1/";
 let secret = "", tab = "", isOwner = false;
 const $ = (id) => document.getElementById(id);
 const sar = (h) => (h / 100).toLocaleString("en", { minimumFractionDigits: 2 }) + " SAR";
+const TEAM_URL = "https://mrsam-io.github.io/cashO-legal/team-da20ade5706e/";   // the link friends open (the published copy of this page)
 const orderNo = (id) => "#" + String(id || "").slice(0, 8).toUpperCase();   // the same short number the buyer and the seller see on their order
 const when = (t) => t ? new Date(t).toLocaleString() : "";
 
@@ -211,6 +212,43 @@ const TABS = {
       card("Collected from buyers (all time)", sar(m.collected), "Everything buyers paid through Moyasar, including refunded orders."),
       card("Refunded to buyers", sar(m.refunded), m.refund_waiting ? `Plus ${sar(m.refund_waiting)} waiting to be refunded (Claims tab, Process waiting refunds).` : "Nothing waiting."),
       card("Held for orders in progress", sar(m.held_in_progress), "Paid but not final yet: waiting to ship, in delivery, or inside the claim window. Not yours and not the seller's yet."));
+  },
+
+  async Team(v) {
+    const { helpers } = await call("admin", { action: "helpers" });
+    const { log } = await call("admin", { action: "team_log" });
+    v.append(el("p", { class: "mut" }, "Friends who help you. A friend can handle claims, reports and orders. They cannot refund money, see bank details, or change anything else. Each friend has their own password, so you can remove one without touching the others."));
+    if (window.invite) {   // shown once: the password is not stored anywhere readable
+      const text = `CashO team page\nLink: ${TEAM_URL}\nYour name: ${window.invite.name}\nYour password: ${window.invite.password}\n(The password is only for you. Do not share it.)\n\nصفحة فريق كاش أو\nالرابط: ${TEAM_URL}\nالاسم: ${window.invite.name}\nكلمة المرور: ${window.invite.password}\n(كلمة المرور لك وحدك. لا تشاركها.)`;
+      const box = el("textarea", { readonly: "", rows: "9", style: "width:100%;font-size:14px" }); box.value = text;
+      v.append(el("div", { class: "card" },
+        el("b", {}, `Invitation for ${window.invite.name}: copy it now, the password is shown only once`),
+        box,
+        el("div", { class: "row" },
+          el("button", { class: "primary", onclick: async () => { try { await navigator.clipboard.writeText(text); say("Copied. Paste it in a message to your friend.", "ok"); } catch { box.select(); say("Select the text and copy it.", "mut"); } } }, "Copy the invitation"),
+          el("button", { onclick: () => { window.invite = null; show("Team"); } }, "I sent it, hide this"))));
+    }
+    const nameIn = el("input", { placeholder: "Friend's name, letters only (for example sara)", size: "34" });
+    const addBtn = el("button", { class: "primary", onclick: async () => {
+      try { const r = await call("admin", { action: "add_helper", name: nameIn.value }); window.invite = r; show("Team"); } catch (e) { say(e.message, "bad"); }
+    } }, "Add a friend");
+    nameIn.addEventListener("keydown", (e) => { if (e.key === "Enter") addBtn.click(); });
+    v.append(el("div", { class: "row" }, nameIn, addBtn));
+    if (!helpers.length) v.append(el("p", { class: "mut" }, "No friends added yet."));
+    for (const h of helpers) {
+      v.append(el("div", { class: "card" },
+        el("b", {}, h.name), el("div", { class: "mut" }, `Added ${when(h.created_at)} · last login ${h.last_login ? when(h.last_login) : "never"}`),
+        el("div", { class: "row" },
+          el("button", { onclick: async () => { if (!confirm(`Make a new password for ${h.name}? The old one stops working.`)) return; try { window.invite = await call("admin", { action: "reset_helper", name: h.name }); show("Team"); } catch (e) { say(e.message, "bad"); } } }, "New password"),
+          el("button", { class: "danger", onclick: () => confirm(`Remove ${h.name}? Their password stops working at once.`) && act("admin", { action: "remove_helper", name: h.name }, `${h.name} removed`) }, "Remove"))));
+    }
+    v.append(el("h3", {}, "What your friends did (latest 60)"));
+    if (!log.length) v.append(el("p", { class: "mut" }, "Nothing yet."));
+    else {
+      const t = el("table", {}, el("tr", {}, ...["When", "Who", "What", "Order or item"].map((h) => el("th", {}, h))));
+      for (const r of log) t.append(el("tr", {}, el("td", { class: "mut" }, when(r.at)), el("td", {}, r.who), el("td", {}, r.action), el("td", { class: "mut" }, r.target || "")));
+      v.append(t);
+    }
   },
 
   async Orders(v) {
