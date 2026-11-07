@@ -365,6 +365,30 @@ const TABS = {
         el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "vehicle_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
   },
 
+  async Referrals(v) {
+    const r = await call("admin", { action: "referral_list" });
+    const S = r.settings, pct = (bps) => (bps / 100) + "%";
+    v.append(el("div", { class: "card" }, el("b", {}, "Referral codes"),
+      el("div", { class: "mut" }, `A buyer who enters a code gets ${sar(S.referral_discount_halalas || 2000)} off their FIRST order (items from ${sar(S.referral_min_item_halalas || 10000)}). CashO pays the discount. The influencer earns ${pct(S.referral_share_bps || 3000)} of CashO's commission on COMPLETED orders from those buyers, for ${S.referral_days || 90} days after each buyer joined. You pay them by bank transfer, then press "Mark paid". These numbers are in app_settings (referral_*).`)));
+    const code = el("input", { placeholder: "CODE e.g. SARA20", size: 14 }), who = el("input", { placeholder: "Influencer name", size: 20 });
+    const disc = el("input", { placeholder: "Discount SAR (optional)", size: 14, inputmode: "numeric" }), share = el("input", { placeholder: "Share % (optional)", size: 12, inputmode: "numeric" });
+    v.append(el("div", { class: "card" }, el("b", {}, "New code"), el("div", { class: "row" }, code, who, disc, share,
+      el("button", { class: "primary", onclick: () => act("admin", { action: "referral_create", code: code.value, influencer: who.value, discount_halalas: disc.value ? Math.round(Number(disc.value) * 100) : null, share_bps: share.value ? Math.round(Number(share.value) * 100) : null }, "Code created") }, "Create"))));
+    const base = "https://mrsam-io.github.io/cashO-legal/open.html?r=";
+    for (const c of r.codes) {
+      const owed = Math.max(0, Number(c.earned_halalas) - Number(c.paid_halalas));
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${c.code} · ${c.influencer}${c.active ? "" : " (OFF)"}`),
+        el("div", { class: "mut" }, `Discount ${sar(c.discount_halalas)} · share ${pct(c.share_bps)} · ${c.buyers} buyer(s) joined · ${c.orders} completed order(s) · CashO commission ${sar(Number(c.commission_halalas))} · discounts given ${sar(Number(c.discount_given_halalas))}`),
+        el("div", {}, `Earned ${sar(Number(c.earned_halalas))} · paid ${sar(Number(c.paid_halalas))} · `, el("b", { class: owed ? "bad" : "" }, `OWED ${sar(owed)}`)),
+        el("div", { class: "mut" }, `Share link: ${base}${c.code}`),
+        el("div", { class: "row" },
+          el("button", { onclick: () => { navigator.clipboard.writeText(base + c.code); say("Link copied", "ok"); } }, "Copy link"),
+          owed ? el("button", { class: "primary", onclick: () => { const a = prompt(`How many SAR did you transfer to ${c.influencer}? (owed ${(owed / 100).toFixed(2)})`, (owed / 100).toFixed(2)); if (a && Number(a) > 0 && confirm(`Mark ${a} SAR as paid to ${c.influencer}?`)) act("admin", { action: "referral_paid", code: c.code, amount_halalas: Math.round(Number(a) * 100) }, "Marked as paid"); } }, "Mark paid") : null,
+          el("button", { class: c.active ? "danger" : "primary", onclick: () => act("admin", { action: "referral_toggle", code: c.code, active: !c.active }, c.active ? "Code switched off" : "Code switched on") }, c.active ? "Switch OFF" : "Switch ON"))));
+    }
+  },
+
   async Team(v) {
     const { helpers } = await call("admin", { action: "helpers" });
     const { log } = await call("admin", { action: "team_log" });
@@ -467,7 +491,7 @@ $("go").onclick = async () => {
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
-  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts"].includes(n));
+  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts", "Referrals"].includes(n));
   say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except money, payouts and team).`, "ok");
   $("q").hidden = false;
   const nav = $("tabs"); nav.hidden = false; nav.replaceChildren(...names.map((n) => el("button", { onclick: () => show(n) }, n)));
