@@ -220,6 +220,26 @@ const TABS = {
       card("Held for orders in progress", sar(m.held_in_progress), "Paid but not final yet: waiting to ship, in delivery, or inside the claim window. Not yours and not the seller's yet."));
   },
 
+  async Suggestions(v) {
+    const sel = el("select", {}, el("option", { value: "new" }, "New"), el("option", { value: "read" }, "Read"), el("option", { value: "done" }, "Done"), el("option", { value: "" }, "All"));
+    sel.value = window.suggestionFilter ?? "new";
+    sel.onchange = () => { window.suggestionFilter = sel.value; show("Suggestions"); };
+    const { suggestions } = await call("admin", { action: "suggestions", status: sel.value || undefined });
+    v.append(el("div", { class: "row" }, sel, el("span", { class: "mut" }, `${suggestions.length} shown (latest 200)`)));
+    if (!suggestions.length) v.append(el("p", { class: "mut" }, "Nothing here."));
+    const kinds = { idea: "Idea", problem: "Problem", other: "Other" };
+    for (const s of suggestions) {
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${kinds[s.kind] || s.kind} · ${s.status}`),
+        el("div", { class: "mut" }, `${when(s.created_at)} · ${s.name || "?"} (@${s.username || "?"})`),
+        el("div", { dir: "auto", style: "white-space:pre-wrap;margin:6px 0" }, s.body),
+        el("div", { class: "row" },
+          s.status !== "read" ? el("button", { onclick: () => act("admin", { action: "suggestion_status", id: s.id, status: "read" }, "Marked as read") }, "Mark read") : null,
+          s.status !== "done" ? el("button", { class: "primary", onclick: () => act("admin", { action: "suggestion_status", id: s.id, status: "done" }, "Marked as done") }, "Done") : null,
+          el("button", { class: "danger", onclick: () => confirm("Delete this suggestion for good?") && act("admin", { action: "delete_suggestion", id: s.id }, "Deleted") }, "Delete"))));
+    }
+  },
+
   async Team(v) {
     const { helpers } = await call("admin", { action: "helpers" });
     const { log } = await call("admin", { action: "team_log" });
