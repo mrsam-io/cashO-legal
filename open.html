@@ -14,8 +14,8 @@
 <p class="mut">If nothing happens, CashO is not installed on this phone yet. · إذا لم يحدث شيء فلم يتم تثبيت CashO على هذا الجوال بعد.</p>
 </main>
 <script>
-  // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>
-  var q = new URLSearchParams(location.search), kind = ["p", "s", "v"].find(function (k) { return q.get(k); });
+  // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>  ?c=<vehicle listing id>
+  var q = new URLSearchParams(location.search), kind = ["p", "s", "v", "c"].find(function (k) { return q.get(k); });
   var id = kind && q.get(kind);
   if (id && /^[0-9a-f-]{36}$/i.test(id)) {
     var app = "ocash://" + kind + "/" + id;
