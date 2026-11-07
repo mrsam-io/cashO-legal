@@ -62,6 +62,20 @@ async function call(fn, body) {
 async function act(fn, body, done) {   // run an action, show the result, reload the tab
   try { const j = await call(fn, body); say((done || "Done") + (j.emailed === true ? " · seller emailed" : j.emailed === false ? " · no email sent (seller has no email or email not set up)" : ""), "ok"); await show(tab); return j; } catch (e) { say(e.message, "bad"); }
 }
+async function removeProductFlow(a) {   // a = {product_id, reason, strike, report_id?}: removes a product, then handles the refunds
+  try {
+    const j = a.report_id
+      ? await call("admin", { action: "review_report", id: a.report_id, report_action: "remove_product", reason: a.reason, strike: a.strike })
+      : await call("admin", { action: "remove_product", product_id: a.product_id, reason: a.reason, strike: a.strike });
+    let msg = "Product removed, seller emailed" + (j.strike ? " · strike given" : "") + (j.auction_cancelled ? " · auction cancelled" : "");
+    if (j.refunds_queued) {
+      if (isOwner) { try { await call("refund", { action: "run" }); msg += ` · ${j.refunds_queued} paid order(s) refunded`; } catch (e) { msg += ` · ${j.refunds_queued} refund(s) waiting: press "Process waiting refunds" in the Claims tab`; } }
+      else msg += ` · ${j.refunds_queued} paid order(s) waiting for a refund: ask the owner to press "Process waiting refunds"`;
+    }
+    if (j.orders_in_progress) msg += ` · ${j.orders_in_progress} order(s) already shipped: handle them in Orders / Claims`;
+    say(msg, "ok"); await show(tab);
+  } catch (e) { say(e.message, "bad"); }
+}
 // CSV for Excel / Numbers / Google Sheets. The BOM makes Arabic names show correctly. A cell starting with = + - @ gets a leading ' so a hostile
 // name or product title can never run as a spreadsheet formula.
 function toCSV(rows) {
@@ -125,12 +139,14 @@ const TABS = {
     const { reports } = await call("admin", { action: "reports" });
     v.append(el("p", { class: "mut" }, "Reports from users. Reply to serious ones within 24 hours (Apple expects fast action on abusive content)."));
     if (!reports.length) v.append(el("p", {}, "No open reports."));
-    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a video comment" };
+    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a video comment", product: "a product" };
     for (const r of reports) {
       const who = `${r.seller_name} (@${r.seller_username})`;
       v.append(el("div", { class: "card" },
         el("b", {}, `${r.reason} · reported ${label[r.target_type] || r.target_type}: ${who}`),
         el("div", { class: "mut" }, `"${r.snapshot}"`),
+        r.target_type === "product" && r.product_photo ? el("img", { src: r.product_photo, style: "width:120px;height:120px;object-fit:cover;border-radius:8px;display:block;margin:8px 0" }) : null,
+        r.target_type === "product" && r.product_removed ? el("div", { class: "bad" }, "This product is already removed or gone.") : null,
         r.target_type === "video" ? (r.video_url ? el("video", { src: r.video_url, controls: "", playsinline: "", preload: "metadata", style: "max-width:260px;max-height:360px;display:block;margin:8px 0" }) : el("div", { class: "mut" }, "The video was already removed.")) : null,
         r.note ? el("div", {}, `Reporter's note: ${r.note}`) : null,
         el("div", { class: "mut" }, `By @${r.reporter_username} · ${when(r.created_at)} · ${r.open_against_seller} open report(s) against this person`),
@@ -140,6 +156,13 @@ const TABS = {
           r.target_type === "review" ? el("button", { class: "danger", onclick: () => confirm("Remove this review for good?") && act("admin", { action: "review_report", id: r.id, report_action: "remove_review" }, "Review removed") }, "Remove review") : null,
           r.target_type === "comment" ? el("button", { class: "danger", onclick: () => confirm("Remove this comment for good?") && act("admin", { action: "review_report", id: r.id, report_action: "remove_comment" }, "Comment removed") }, "Remove comment") : null,
           r.target_type === "video" && r.video_url ? el("button", { class: "danger", onclick: () => confirm("Remove this video for good? The seller can post a new one.") && act("admin", { action: "review_report", id: r.id, report_action: "remove_video" }, "Video removed") }, "Remove video") : null,
+          ...(r.target_type === "product" && !r.product_removed ? (() => {
+            const reasonsP = { prohibited_item: "Medicine or drugs", illegal: "Illegal item", weapons: "Weapons", counterfeit: "Counterfeit or fake", offensive: "Offensive content", other: "Other rule break" };
+            const sel = el("select", {}, ...Object.entries(reasonsP).map(([k, t]) => el("option", { value: k }, t)));
+            const strike = el("input", { type: "checkbox", checked: "" });
+            return [sel, el("label", {}, strike, " strike"),
+              el("button", { class: "danger", onclick: () => confirm(`Remove this product (${reasonsP[sel.value]})${strike.checked ? " and give the seller a strike" : ""}? Paid orders that are not shipped yet are refunded.`) && removeProductFlow({ report_id: r.id, reason: sel.value, strike: strike.checked }) }, "Remove product")];
+          })() : []),
           r.is_seller && !r.seller_suspended ? el("button", { class: "danger", onclick: () => confirm(`Suspend the SELLING of ${who}? They cannot sell or go live (their live ends now). They can still buy and chat. Undo in the Sellers tab.`) && act("admin", { action: "review_report", id: r.id, report_action: "suspend" }, "Selling suspended") }, "Suspend selling") : null,
           el("button", { class: "danger", onclick: async () => { if (!confirm(`BAN the account of ${who}? They cannot sign in at all until you unban them (below). Their orders and data stay.`)) return;
             await act("admin", { action: "ban_user", user_id: r.seller_id, banned: true }, "Account banned"); await act("admin", { action: "review_report", id: r.id, report_action: "actioned" }, "Account banned and report closed"); } }, "Ban account"),
@@ -237,6 +260,33 @@ const TABS = {
           s.status !== "read" ? el("button", { onclick: () => act("admin", { action: "suggestion_status", id: s.id, status: "read" }, "Marked as read") }, "Mark read") : null,
           s.status !== "done" ? el("button", { class: "primary", onclick: () => act("admin", { action: "suggestion_status", id: s.id, status: "done" }, "Marked as done") }, "Done") : null,
           el("button", { class: "danger", onclick: () => confirm("Delete this suggestion for good?") && act("admin", { action: "delete_suggestion", id: s.id }, "Deleted") }, "Delete"))));
+    }
+  },
+
+  async Products(v) {
+    const find = el("input", { placeholder: "Find a product: title, @seller, or product ID", size: "36", value: window.productQuery || "" });
+    const go = el("button", { onclick: () => { window.productQuery = find.value.trim(); show("Products"); } }, "Find");
+    find.addEventListener("keydown", (e) => { if (e.key === "Enter") go.click(); });
+    v.append(el("div", { class: "row" }, find, go));
+    v.append(el("p", { class: "mut" }, "Remove a bad product (medicine, drugs, illegal or fake items ...). The product goes off the Shop and lists, its video is hidden, a running auction is cancelled and card holds are released, and the seller gets an email with the reason. The seller cannot put it back. A strike counts toward the same 3 as auction strikes."));
+    const { products } = await call("admin", { action: "products", q: window.productQuery || "" });
+    if (!products.length) v.append(el("p", { class: "mut" }, "Nothing found."));
+    const reasons = { prohibited_item: "Medicine or drugs", illegal: "Illegal item", weapons: "Weapons", counterfeit: "Counterfeit or fake", offensive: "Offensive content", other: "Other rule break" };
+    for (const p of products) {
+      const state = p.removed_by_admin ? "REMOVED by admin: " + (reasons[p.removal_reason] || p.removal_reason) : (p.active ? (p.in_shop ? "Live in the Shop" : "Active") : "Hidden by the seller");
+      const card = el("div", { class: "card" },
+        el("div", { class: "row" }, p.photo_url ? el("img", { src: p.photo_url, style: "width:84px;height:84px;object-fit:cover;border-radius:8px" }) : null,
+          el("div", {}, el("b", {}, p.title), el("div", { class: "mut" }, `${p.seller || "?"} (@${p.username || "?"}) · ${sar(p.price_halalas)} · qty ${p.quantity}`), el("div", { class: p.removed_by_admin ? "bad" : "mut" }, state))),
+        p.description ? el("div", { dir: "auto", style: "white-space:pre-wrap;margin:6px 0" }, p.description) : null);
+      if (p.removed_by_admin) {
+        card.append(el("div", { class: "row" }, el("button", { onclick: () => confirm("Restore this product? The seller can use it again.") && act("admin", { action: "restore_product", product_id: p.id }, "Restored") }, "Restore")));
+      } else {
+        const sel = el("select", {}, ...Object.entries(reasons).map(([k, t]) => el("option", { value: k }, t)));
+        const strike = el("input", { type: "checkbox", checked: "" });
+        card.append(el("div", { class: "row" }, sel, el("label", {}, strike, " also give the seller a strike"),
+          el("button", { class: "danger", onclick: () => confirm(`Remove "${p.title}" (${reasons[sel.value]})${strike.checked ? " and give the seller a strike" : ""}? Paid orders that are not shipped yet are refunded.`) && removeProductFlow({ product_id: p.id, reason: sel.value, strike: strike.checked }) }, "Remove product")));
+      }
+      v.append(card);
     }
   },
 
