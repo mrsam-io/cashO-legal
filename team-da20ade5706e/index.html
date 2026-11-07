@@ -368,18 +368,34 @@ const TABS = {
   async Referrals(v) {
     const r = await call("admin", { action: "referral_list" });
     const S = r.settings, pct = (bps) => (bps / 100) + "%";
-    v.append(el("div", { class: "card" }, el("b", {}, "Referral codes"),
-      el("div", { class: "mut" }, `A buyer who enters a code gets ${sar(S.referral_discount_halalas || 2000)} off their FIRST order (items from ${sar(S.referral_min_item_halalas || 10000)}). CashO pays the discount. The influencer earns ${pct(S.referral_share_bps || 3000)} of CashO's commission on COMPLETED orders from those buyers, for ${S.referral_days || 90} days after each buyer joined. You pay them by bank transfer, then press "Mark paid". These numbers are in app_settings (referral_*).`)));
-    const code = el("input", { placeholder: "CODE e.g. SARA20", size: 14 }), who = el("input", { placeholder: "Influencer name", size: 20 });
-    const disc = el("input", { placeholder: "Discount SAR (optional)", size: 14, inputmode: "numeric" }), share = el("input", { placeholder: "Share % (optional)", size: 12, inputmode: "numeric" });
-    v.append(el("div", { class: "card" }, el("b", {}, "New code"), el("div", { class: "row" }, code, who, disc, share,
-      el("button", { class: "primary", onclick: () => act("admin", { action: "referral_create", code: code.value, influencer: who.value, discount_halalas: disc.value ? Math.round(Number(disc.value) * 100) : null, share_bps: share.value ? Math.round(Number(share.value) * 100) : null }, "Code created") }, "Create"))));
+    const maxS = S.referral_max_orders === undefined ? 1 : S.referral_max_orders;
+    v.append(el("div", { class: "card" }, el("b", {}, "How referral codes work"),
+      el("div", {}, "1. You create a code for an influencer (for example SARA20) and send them the link. They share it with their followers."),
+      el("div", {}, `2. A buyer types the code at checkout and gets ${sar(S.referral_discount_halalas || 2000)} off (items from ${sar(S.referral_min_item_halalas || 10000)}). CashO pays the discount, the seller is paid as usual. By default each person can use a code ${maxS === 0 ? "on EVERY order" : maxS === 1 ? "ONCE (any order, new or old customer)" : maxS + " times"}. A code can also have a total limit (for example 500 uses) and an end date.`),
+      el("div", {}, `3. The buyer is then tied to that influencer for ${S.referral_days || 90} days. The influencer earns ${pct(S.referral_share_bps || 3000)} of CashO's commission on every COMPLETED order of that buyer in that time, whether or not the discount was used. Refunded orders earn nothing.`),
+      el("div", {}, '4. When money is owed, you transfer it to the influencer yourself, then press "Mark paid" on their card.'),
+      el("div", { class: "mut" }, "Default numbers are in app_settings (referral_discount_halalas, referral_share_bps, referral_days, referral_min_item_halalas, referral_max_orders). Each code can override them below.")));
+    const lab = (title, help, input) => el("div", { style: "margin:6px 0" }, el("b", {}, title), el("div", { class: "mut" }, help), input);
+    const code = el("input", { placeholder: "SARA20", size: 14, maxlength: 20 }), who = el("input", { placeholder: "Sara Ahmed", size: 24 });
+    const disc = el("input", { placeholder: `empty = ${(S.referral_discount_halalas || 2000) / 100}`, size: 10, inputmode: "numeric" }), share = el("input", { placeholder: `empty = ${(S.referral_share_bps || 3000) / 100}`, size: 10, inputmode: "numeric" });
+    const mx = el("input", { placeholder: `empty = ${maxS}`, size: 10, inputmode: "numeric" });
+    const tot = el("input", { placeholder: "empty = no limit", size: 14, inputmode: "numeric" }), until = el("input", { type: "date" });
+    v.append(el("div", { class: "card" }, el("b", {}, "Create a new code"),
+      lab("Code", "What the buyer types: 3 to 20 letters or numbers, no spaces. Short and easy, like SARA20.", code),
+      lab("Influencer name", "Only for you, to know who gets paid. The buyer never sees it.", who),
+      lab("Discount for the buyer in SAR (optional)", `Leave empty for the default (${sar(S.referral_discount_halalas || 2000)}).`, disc),
+      lab("Influencer share in % (optional)", `Their percentage of CashO's commission. Leave empty for the default (${pct(S.referral_share_bps || 3000)}).`, share),
+      lab("Orders per buyer that get the discount (optional)", "1 = each person can use the code once (on any order, new or old customers). 0 = every order. 3 = three orders. Leave empty for the default.", mx),
+      lab("Total uses allowed (optional)", "The code stops working after this many discounted orders by everyone, for example 500. Leave empty for no limit.", tot),
+      lab("Valid until (optional)", "The last day the code works (Saudi time). Leave empty for no end date.", until),
+      el("div", { class: "row" }, el("button", { class: "primary", onclick: () => act("admin", { action: "referral_create", code: code.value, influencer: who.value,
+        discount_halalas: disc.value ? Math.round(Number(disc.value) * 100) : null, share_bps: share.value ? Math.round(Number(share.value) * 100) : null, max_orders: mx.value !== "" ? Math.round(Number(mx.value)) : null, max_uses: tot.value ? Math.round(Number(tot.value)) : null, expires_on: until.value || null }, "Code created") }, "Create code"))));
     const base = "https://mrsam-io.github.io/cashO-legal/open.html?r=";
     for (const c of r.codes) {
       const owed = Math.max(0, Number(c.earned_halalas) - Number(c.paid_halalas));
       v.append(el("div", { class: "card" },
         el("b", {}, `${c.code} · ${c.influencer}${c.active ? "" : " (OFF)"}`),
-        el("div", { class: "mut" }, `Discount ${sar(c.discount_halalas)} · share ${pct(c.share_bps)} · ${c.buyers} buyer(s) joined · ${c.orders} completed order(s) · CashO commission ${sar(Number(c.commission_halalas))} · discounts given ${sar(Number(c.discount_given_halalas))}`),
+        el("div", { class: "mut" }, `Discount ${sar(c.discount_halalas)} (${c.max_orders === 0 ? "every order" : c.max_orders === 1 ? "once per person" : c.max_orders + " orders per person"}) · used ${c.uses}${c.max_uses ? " of " + c.max_uses : ""} time(s)${c.expires_at ? " · valid until " + new Date(c.expires_at).toLocaleDateString("en-GB") + (new Date(c.expires_at) < new Date() ? " (EXPIRED)" : "") : ""} · share ${pct(c.share_bps)} · ${c.buyers} buyer(s) joined · ${c.orders} completed order(s) · CashO commission ${sar(Number(c.commission_halalas))} · discounts given ${sar(Number(c.discount_given_halalas))}`),
         el("div", {}, `Earned ${sar(Number(c.earned_halalas))} · paid ${sar(Number(c.paid_halalas))} · `, el("b", { class: owed ? "bad" : "" }, `OWED ${sar(owed)}`)),
         el("div", { class: "mut" }, `Share link: ${base}${c.code}`),
         el("div", { class: "row" },
