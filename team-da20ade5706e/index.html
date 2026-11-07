@@ -88,21 +88,27 @@ function link(url, text) { return url ? el("a", { href: url, target: "_blank", r
 
 const TABS = {
   async Claims(v) {
-    const { claims } = await call("admin", { action: "claims" });
-    if (!claims.length) v.append(el("p", { class: "mut" }, "No open claims."));
+    const find = el("input", { placeholder: "Find a claim by order number (#A1B2C3D4 or full ID)", size: "34", value: window.claimQuery || "" });
+    const findBtn = el("button", { onclick: () => { window.claimQuery = find.value.trim(); show("Claims"); } }, "Find");
+    find.addEventListener("keydown", (e) => { if (e.key === "Enter") findBtn.click(); });
+    v.append(el("div", { class: "row" }, find, findBtn, window.claimQuery ? el("button", { onclick: () => { window.claimQuery = ""; show("Claims"); } }, "Show open claims") : null));
+    const { claims } = await call("admin", { action: "claims", q: window.claimQuery || undefined });
+    if (!claims.length) v.append(el("p", { class: "mut" }, window.claimQuery ? "No claim for this order number." : "No open claims."));
     for (const c of claims) {
       const o = c.orders || {};
       v.append(el("div", { class: "card" },
         el("b", {}, `Order ${orderNo(o.id)} · ${o.product_title || "?"} · ${sar(o.total_halalas || 0)}`),
         el("div", { class: "mut" }, `Full order ID: ${o.id || "?"}`),
-        el("div", {}, `Reason: ${c.reason} · opened ${when(c.created_at)}`),
+        el("div", {}, `Reason: ${c.reason} · opened ${when(c.created_at)} · status: ${c.status}`),
         el("div", { class: "mut" }, `Buyer's note: ${c.note || "(none)"}`),
         (c.photo_urls || []).length
           ? el("div", { class: "row" }, el("span", { class: "mut" }, "Buyer's photos:"), ...c.photo_urls.map((u) => el("a", { href: u, target: "_blank", rel: "noopener" }, el("img", { src: u, style: "height:90px;margin-right:6px;border-radius:6px;border:1px solid #444" }))))
           : el("div", { class: "mut" }, c.reason === "not_delivered" ? "No photo (the parcel never arrived)." : "No photo."),
         el("div", { class: "mut" }, `Carrier: ${o.carrier || "?"} · tracking: ${o.tracking_number || "?"} · `, link(c.proof_url, "shipping proof photo")),
         (c.messages || []).length ? el("div", { class: "mut" }, el("b", {}, "Order messages:"), ...c.messages.map((m) => el("div", { dir: "auto" }, `${m.who}: ${m.body}`))) : el("div", { class: "mut" }, "No messages between buyer and seller."),
-        c.status === "approved"
+        c.status === "refunded" || c.status === "rejected"
+          ? el("div", { class: "row" }, el("b", {}, c.status === "refunded" ? "Final: the buyer was refunded." : "Final: the claim was rejected (or the time to return the item ran out)."))
+          : c.status === "approved"
           ? el("div", { class: "row" },
               c.return_tracking
                 ? [el("div", {}, el("b", {}, `Return shipped ${when(c.return_at)}: ${c.return_carrier} · ${c.return_tracking}`), " (check it on the courier's tracking page first)"),
@@ -311,8 +317,8 @@ $("go").onclick = async () => {
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
-  const names = me.owner ? Object.keys(TABS) : ["Claims", "Reports", "Orders"].filter((n) => TABS[n]);
-  say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: claims, reports and orders).`, "ok");
+  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts"].includes(n));
+  say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except money, payouts and team).`, "ok");
   $("q").hidden = false;
   const nav = $("tabs"); nav.hidden = false; nav.replaceChildren(...names.map((n) => el("button", { onclick: () => show(n) }, n)));
   show("Claims");
