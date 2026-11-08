@@ -365,6 +365,31 @@ const TABS = {
         el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "vehicle_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
   },
 
+  async Promotions(v) {
+    const r = await call("admin", { action: "promo_list" }), S = r.settings;
+    const on = (k) => S[k] === 1;
+    v.append(el("div", { class: "card" }, el("b", {}, "How promotions work"),
+      el("div", {}, "A promoted product shows its video in other people's For You feed (about every 5th slot) with a small \"Promoted\" label, for the days you choose. Views and taps are counted so you can show the seller the result."),
+      el("div", {}, "Switch 1 shows promoted items in the app at all. Switch 2 lets sellers buy a promotion themselves by card in the app. Keep both OFF until everything is tested and the lawyer is happy."),
+      el("div", { class: "mut" }, "You can always create one by hand below (for example a seller paid you by bank transfer). Nothing shows in the app while switch 1 is OFF.")));
+    const sw = (title, help, key, field) => el("div", { class: "card" }, el("b", {}, `${title}: ${on(key) ? "ON" : "OFF"}`), el("div", { class: "mut" }, help),
+      el("button", { class: on(key) ? "danger" : "", onclick: () => act("admin", { action: "promo_list", [field]: !on(key) }, "Saved") }, on(key) ? "Turn OFF" : "Turn ON"));
+    v.append(sw("1. Show promoted items in the feed", "OFF = nobody sees any promotion, even ones you created.", "promotions_enabled", "enabled"));
+    v.append(sw("2. Sellers can buy promotions in the app", "OFF = no Promote button for sellers. Needs switch 1 ON too.", "promo_selfserve_enabled", "selfserve"));
+    const price = el("input", { size: 8, inputmode: "numeric", placeholder: String((S.promo_price_per_day_halalas || 2000) / 100) });
+    v.append(el("div", { class: "card" }, el("b", {}, `Price per day for sellers: ${sar(S.promo_price_per_day_halalas || 2000)} (longest ${S.promo_max_days || 14} days)`),
+      el("div", { class: "row" }, price, el("button", { onclick: () => act("admin", { action: "promo_list", price_halalas: Math.round(Number(price.value) * 100) }, "Saved") }, "Change the price (SAR)"))));
+    const pid = el("input", { size: 40, placeholder: "product id (long code)" }), days = el("input", { size: 4, value: "3", inputmode: "numeric" }), note = el("input", { size: 30, placeholder: "note for you (optional)" });
+    v.append(el("div", { class: "card" }, el("b", {}, "Create a promotion by hand"),
+      el("div", { class: "mut" }, 'The product id is shown as "Product #A1B2C3D4" in the app. Paste the full id from the Products tab. The product must be in the shop with a video.'),
+      el("div", { class: "row" }, pid, days, note, el("button", { onclick: () => act("admin", { action: "promo_create", product_id: pid.value.trim(), days: Number(days.value), note: note.value }, "Promotion started") }, "Start now"))));
+    v.append(el("h3", {}, `Promotions (${r.promotions.length})`));
+    for (const x of r.promotions) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.seller_name} · ${x.status}`),
+      el("div", { class: "mut" }, `${x.source === "seller" ? "bought in the app" : "made by you"} · ${x.days} days${x.price_halalas ? " · " + sar(x.price_halalas) : ""} · ${x.starts_at ? new Date(x.starts_at).toLocaleDateString() + " to " + new Date(x.ends_at).toLocaleDateString() : ""}${x.note ? " · " + x.note : ""}`),
+      el("div", {}, `Shown ${x.impressions} times · tapped ${x.taps} times`),
+      x.status === "active" ? el("button", { class: "danger", onclick: () => { const why = prompt("Reason (only for your records)"); if (why !== null) act("admin", { action: "promo_cancel", id: x.promo_id, reason: why }, "Cancelled"); } }, "Cancel") : null));
+  },
+
   async Referrals(v) {
     const r = await call("admin", { action: "referral_list" });
     const S = r.settings, pct = (bps) => (bps / 100) + "%";
@@ -507,7 +532,7 @@ $("go").onclick = async () => {
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
-  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts", "Referrals"].includes(n));
+  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts", "Referrals", "Promotions"].includes(n));
   say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except money, payouts and team).`, "ok");
   $("q").hidden = false;
   const nav = $("tabs"); nav.hidden = false; nav.replaceChildren(...names.map((n) => el("button", { onclick: () => show(n) }, n)));
