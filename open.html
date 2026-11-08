@@ -9,20 +9,54 @@
 <body>
 <main>
 <h1>CashO</h1>
+<div id="card" hidden>
+  <img id="pic" alt="" hidden>
+  <h2 id="name"></h2>
+  <p id="price"></p>
+  <p id="by" class="mut"></p>
+  <p id="desc"></p>
+</div>
 <p id="msg">Opening CashO… · جارٍ فتح CashO…</p>
-<p><a id="open" href="#">Open in the app · افتح في التطبيق</a></p>
+<p><a id="open" class="btn" href="#">Open in the app · افتح في التطبيق</a></p>
 <p class="mut">If nothing happens, CashO is not installed on this phone yet. · إذا لم يحدث شيء فلم يتم تثبيت CashO على هذا الجوال بعد.</p>
 </main>
+<style>
+  #card { border:1px solid var(--line); border-radius:14px; overflow:hidden; margin:16px 0; }
+  #card > *:not(img) { margin-inline:16px; } #card h2 { margin-top:14px; } #card #desc { margin-bottom:16px; white-space:pre-line; }
+  #pic { width:100%; max-height:420px; object-fit:cover; display:block; }
+  .btn { display:block; text-align:center; background:#f5c518; color:#000; font-weight:700; padding:14px; border-radius:12px; text-decoration:none; }
+</style>
 <script>
-  // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>  ?c=<vehicle listing id>
+  // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>  ?c=<vehicle listing id>  ?r=<referral code>
+  // The page shows a small preview (read-only public data) and also tries to open the app.
+  var API = "https://kzamtrkxckztyxhcypqk.supabase.co", KEY = "sb_publishable_0AxpxZQlCOrCkTcjPVIhmg_Ed37MT0j";
   var q = new URLSearchParams(location.search), kind = ["p", "s", "v", "c", "r"].find(function (k) { return q.get(k); });
-  var id = kind && q.get(kind);
-  // ?r=<referral code> (letters and numbers): the app keeps it for the first checkout
+  var id = kind && q.get(kind), $ = function (x) { return document.getElementById(x); };
+  var hdr = { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" };
+  function get(path) { return fetch(API + "/rest/v1/" + path, { headers: hdr }).then(function (r) { return r.json(); }); }
+  function sar(h) { return (h / 100).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " SAR"; }
+  function show(title, price, by, desc, photo) {
+    $("name").textContent = title || ""; $("price").textContent = price || ""; $("by").textContent = by || ""; $("desc").textContent = (desc || "").slice(0, 300);
+    if (photo) { $("pic").src = API + "/storage/v1/object/public/product-photos/" + encodeURI(photo); $("pic").hidden = false; }
+    $("card").hidden = false; document.title = (title || "CashO") + " · CashO";
+  }
   if (kind === "r" ? /^[A-Za-z0-9]{3,20}$/.test(id || "") : (id && /^[0-9a-f-]{36}$/i.test(id))) {
     var app = "ocash://" + kind + "/" + id;
-    document.getElementById("open").href = app;
+    $("open").href = app;
+    if (kind === "r") show("CashO", "", "Code: " + id.toUpperCase(), "Open CashO and enter this code at checkout for a discount. · افتح كاش أو وأدخل هذا الرمز عند الدفع للحصول على خصم.");
+    else if (kind === "c") fetch(API + "/rest/v1/rpc/vehicle_listing", { method: "POST", headers: hdr, body: JSON.stringify({ p_id: id }) }).then(function (r) { return r.json(); }).then(function (v) {
+      if (v && v.title) show(v.title, v.sale_type === "auction" ? "Auction · مزاد" : v.price_halalas ? sar(v.price_halalas) : "", v.seller_name ? "@" + (v.seller_username || v.seller_name) : "", v.description, (v.photos || [])[0]);
+    }).catch(function () {});
+    else if (kind === "s") get("profiles?id=eq." + id + "&select=display_name,username&limit=1").then(function (r) {
+      if (r && r[0]) show(r[0].display_name || "@" + r[0].username, "", r[0].username ? "@" + r[0].username : "", "Watch lives and shop on CashO. · شاهد البثوث المباشرة وتسوق على كاش أو.");
+    }).catch(function () {});
+    else get("products?id=eq." + id + "&select=title,price_halalas,photos,description,seller_id&limit=1").then(function (r) {
+      var p = r && r[0]; if (!p) return;
+      show(p.title, sar(p.price_halalas), "", p.description, (p.photos || [])[0]);
+      get("profiles?id=eq." + p.seller_id + "&select=display_name,username&limit=1").then(function (s) { if (s && s[0]) $("by").textContent = "@" + (s[0].username || s[0].display_name); });
+    }).catch(function () {});
     location.href = app;
-  } else { document.getElementById("msg").textContent = "This link is not valid. · هذا الرابط غير صالح."; }
+  } else { $("msg").textContent = "This link is not valid. · هذا الرابط غير صالح."; }
 </script>
 </body>
 </html>
