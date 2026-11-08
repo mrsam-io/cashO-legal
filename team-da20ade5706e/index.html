@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CashO Admin</title>
+<title>Casho Admin</title>
 <style>
   :root { --bg:#fff; --fg:#111; --mut:#666; --line:#ddd; --card:#f6f6f6; --btn:#111; --btnfg:#fff; --bad:#c62828; --ok:#2e7d32; }
   @media (prefers-color-scheme: dark) { :root { --bg:#121212; --fg:#eee; --mut:#999; --line:#333; --card:#1c1c1c; --btn:#eee; --btnfg:#111; --bad:#ef5350; --ok:#66bb6a; } }
@@ -24,7 +24,7 @@
 </style>
 </head>
 <body>
-<h1>CashO Admin</h1>
+<h1>Casho Admin</h1>
 <div class="row">
   <input id="secret" type="password" placeholder="Admin secret" autocomplete="off" size="36">
   <button class="primary" id="go">Open</button>
@@ -231,10 +231,10 @@ const TABS = {
     const m = await call("admin", { action: "money" });
     const card = (title, value, help, cls = "") => el("div", { class: "card" }, el("div", { class: "mut" }, title), el("b", { class: cls, style: "font-size:20px" }, value), el("div", { class: "mut" }, help));
     const cf = await call("admin", { action: "coffee" });
-    v.append(el("h3", {}, "Support CashO button"), el("div", { class: "card" },
+    v.append(el("h3", {}, "Support Casho button"), el("div", { class: "card" },
       el("b", {}, `"Buy us a coffee" button in the Profile page: ${cf.enabled ? "ON" : "OFF"}`),
       el("div", { class: "mut" }, `Voluntary gifts by card (SAR 5 to 500). No refunds. Given so far: ${cf.count} gift(s), ${sar(cf.total_halalas)}. Keep it OFF until you are sure about Apple's rules on tips (App Review may require Apple's own in-app purchase for gifts to the developer).`),
-      el("div", { class: "row" }, el("button", { class: cf.enabled ? "danger" : "primary", onclick: () => confirm(cf.enabled ? "Switch the Support CashO button OFF?" : "Switch the Support CashO button ON for everyone?") && act("admin", { action: "coffee", on: !cf.enabled }, "Saved") }, cf.enabled ? "Switch OFF" : "Switch ON"))));
+      el("div", { class: "row" }, el("button", { class: cf.enabled ? "danger" : "primary", onclick: () => confirm(cf.enabled ? "Switch the Support Casho button OFF?" : "Switch the Support Casho button ON for everyone?") && act("admin", { action: "coffee", on: !cf.enabled }, "Saved") }, cf.enabled ? "Switch OFF" : "Switch ON"))));
     v.append(
       el("h3", {}, "Your profit"),
       card("Commission earned (completed orders)", sar(m.commission_earned), "The 15% you keep. Counted only when the claim window is over and the sale is final.", "ok"),
@@ -333,7 +333,7 @@ const TABS = {
         el("div", { class: "mut" }, `Seller ${d.seller} · winner ${d.winner || "?"} · bid ${sar(d.current_halalas || 0)} · deposit ${sar(d.deposit_halalas || 0)} · deadline ${d.deal_deadline ? when(d.deal_deadline) : "-"} · seller ${d.seller_done_at ? "pressed Done" : "not yet"} · buyer ${d.buyer_done_at ? "pressed Done" : "not yet"}`),
         d.status === "closing" ? null : el("div", { class: "mut" }, "Decide only when someone asks or the deal is in dispute. Read the chat or ask both people first."),
         d.status === "closing" ? null : el("div", { class: "row" },
-          el("button", { class: "danger", onclick: () => confirm(`Buyer at fault? The seller is owed the deposit (minus CashO's share) and the buyer gets a strike.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "buyer_fault" }, "Done: seller owed, buyer strike") }, "Buyer at fault"),
+          el("button", { class: "danger", onclick: () => confirm(`Buyer at fault? The seller is owed the deposit (minus Casho's share) and the buyer gets a strike.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "buyer_fault" }, "Done: seller owed, buyer strike") }, "Buyer at fault"),
           el("button", { class: "danger", onclick: () => confirm(`Seller at fault? The deposit is refunded to the buyer and the seller gets a strike.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "seller_fault" }, "Done: deposit refunded, seller strike") }, "Seller at fault"),
           el("button", { onclick: () => confirm(`No one at fault? The deposit is refunded to the buyer, no strikes.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "no_fault" }, "Done: deposit refunded") }, "No fault: refund buyer"))));
       v.append(el("h3", {}, `Deposits owed to sellers (${dl.owed.length})`));
@@ -371,8 +371,8 @@ const TABS = {
     const maxS = S.referral_max_orders === undefined ? 1 : S.referral_max_orders;
     v.append(el("div", { class: "card" }, el("b", {}, "How referral codes work"),
       el("div", {}, "1. You create a code for an influencer (for example SARA20) and send them the link. They share it with their followers."),
-      el("div", {}, `2. A buyer types the code at checkout and gets ${sar(S.referral_discount_halalas || 2000)} off (items from ${sar(S.referral_min_item_halalas || 10000)}). CashO pays the discount, the seller is paid as usual. By default each person can use a code ${maxS === 0 ? "on EVERY order" : maxS === 1 ? "ONCE (any order, new or old customer)" : maxS + " times"}. A code can also have a total limit (for example 500 uses) and an end date.`),
-      el("div", {}, `3. The buyer is then tied to that influencer for ${S.referral_days || 90} days. The influencer earns ${pct(S.referral_share_bps || 3000)} of CashO's commission on every COMPLETED order of that buyer in that time, whether or not the discount was used. Refunded orders earn nothing.`),
+      el("div", {}, `2. A buyer types the code at checkout and gets ${sar(S.referral_discount_halalas || 2000)} off (items from ${sar(S.referral_min_item_halalas || 10000)}). Casho pays the discount, the seller is paid as usual. By default each person can use a code ${maxS === 0 ? "on EVERY order" : maxS === 1 ? "ONCE (any order, new or old customer)" : maxS + " times"}. A code can also have a total limit (for example 500 uses) and an end date.`),
+      el("div", {}, `3. The buyer is then tied to that influencer for ${S.referral_days || 90} days. The influencer earns ${pct(S.referral_share_bps || 3000)} of Casho's commission on every COMPLETED order of that buyer in that time, whether or not the discount was used. Refunded orders earn nothing.`),
       el("div", {}, '4. When money is owed, you transfer it to the influencer yourself, then press "Mark paid" on their card.'),
       el("div", { class: "mut" }, "Default numbers are in app_settings (referral_discount_halalas, referral_share_bps, referral_days, referral_min_item_halalas, referral_max_orders). Each code can override them below.")));
     const lab = (title, help, input) => el("div", { style: "margin:6px 0" }, el("b", {}, title), el("div", { class: "mut" }, help), input);
@@ -384,7 +384,7 @@ const TABS = {
       lab("Code", "What the buyer types: 3 to 20 letters or numbers, no spaces. Short and easy, like SARA20.", code),
       lab("Influencer name", "Only for you, to know who gets paid. The buyer never sees it.", who),
       lab("Discount for the buyer in SAR (optional)", `Leave empty for the default (${sar(S.referral_discount_halalas || 2000)}).`, disc),
-      lab("Influencer share in % (optional)", `Their percentage of CashO's commission. Leave empty for the default (${pct(S.referral_share_bps || 3000)}).`, share),
+      lab("Influencer share in % (optional)", `Their percentage of Casho's commission. Leave empty for the default (${pct(S.referral_share_bps || 3000)}).`, share),
       lab("Orders per buyer that get the discount (optional)", "1 = each person can use the code once (on any order, new or old customers). 0 = every order. 3 = three orders. Leave empty for the default.", mx),
       lab("Total uses allowed (optional)", "The code stops working after this many discounted orders by everyone, for example 500. Leave empty for no limit.", tot),
       lab("Valid until (optional)", "The last day the code works (Saudi time). Leave empty for no end date.", until),
@@ -395,7 +395,7 @@ const TABS = {
       const owed = Math.max(0, Number(c.earned_halalas) - Number(c.paid_halalas));
       v.append(el("div", { class: "card" },
         el("b", {}, `${c.code} · ${c.influencer}${c.active ? "" : " (OFF)"}`),
-        el("div", { class: "mut" }, `Discount ${sar(c.discount_halalas)} (${c.max_orders === 0 ? "every order" : c.max_orders === 1 ? "once per person" : c.max_orders + " orders per person"}) · used ${c.uses}${c.max_uses ? " of " + c.max_uses : ""} time(s)${c.expires_at ? " · valid until " + new Date(c.expires_at).toLocaleDateString("en-GB") + (new Date(c.expires_at) < new Date() ? " (EXPIRED)" : "") : ""} · share ${pct(c.share_bps)} · ${c.buyers} buyer(s) joined · ${c.orders} completed order(s) · CashO commission ${sar(Number(c.commission_halalas))} · discounts given ${sar(Number(c.discount_given_halalas))}`),
+        el("div", { class: "mut" }, `Discount ${sar(c.discount_halalas)} (${c.max_orders === 0 ? "every order" : c.max_orders === 1 ? "once per person" : c.max_orders + " orders per person"}) · used ${c.uses}${c.max_uses ? " of " + c.max_uses : ""} time(s)${c.expires_at ? " · valid until " + new Date(c.expires_at).toLocaleDateString("en-GB") + (new Date(c.expires_at) < new Date() ? " (EXPIRED)" : "") : ""} · share ${pct(c.share_bps)} · ${c.buyers} buyer(s) joined · ${c.orders} completed order(s) · Casho commission ${sar(Number(c.commission_halalas))} · discounts given ${sar(Number(c.discount_given_halalas))}`),
         el("div", {}, `Earned ${sar(Number(c.earned_halalas))} · paid ${sar(Number(c.paid_halalas))} · `, el("b", { class: owed ? "bad" : "" }, `OWED ${sar(owed)}`)),
         el("div", { class: "mut" }, `Share link: ${base}${c.code}`),
         el("div", { class: "row" },
@@ -410,7 +410,7 @@ const TABS = {
     const { log } = await call("admin", { action: "team_log" });
     v.append(el("p", { class: "mut" }, "Friends who help you. A friend can handle claims, reports and orders. They cannot refund money, see bank details, or change anything else. Each friend has their own password, so you can remove one without touching the others."));
     if (window.invite) {   // shown once: the password is not stored anywhere readable
-      const text = `CashO team page\nLink: ${TEAM_URL}\nYour name: ${window.invite.name}\nYour password: ${window.invite.password}\n(The password is only for you. Do not share it.)\n\nصفحة فريق كاش أو\nالرابط: ${TEAM_URL}\nالاسم: ${window.invite.name}\nكلمة المرور: ${window.invite.password}\n(كلمة المرور لك وحدك. لا تشاركها.)`;
+      const text = `Casho team page\nLink: ${TEAM_URL}\nYour name: ${window.invite.name}\nYour password: ${window.invite.password}\n(The password is only for you. Do not share it.)\n\nصفحة فريق كاشو\nالرابط: ${TEAM_URL}\nالاسم: ${window.invite.name}\nكلمة المرور: ${window.invite.password}\n(كلمة المرور لك وحدك. لا تشاركها.)`;
       const box = el("textarea", { readonly: "", rows: "9", style: "width:100%;font-size:14px" }); box.value = text;
       v.append(el("div", { class: "card" },
         el("b", {}, `Invitation for ${window.invite.name}: copy it now, the password is shown only once`),
