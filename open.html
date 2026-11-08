@@ -29,7 +29,8 @@
 <script>
   // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>  ?c=<vehicle listing id>  ?r=<referral code>
   // The page shows a small preview (read-only public data) and also tries to open the app.
-  var API = "https://kzamtrkxckztyxhcypqk.supabase.co", KEY = "sb_publishable_0AxpxZQlCOrCkTcjPVIhmg_Ed37MT0j";
+  // MEDIA = CloudFront cache in front of Supabase Storage. To go back to plain Supabase: API + "/storage/v1/object/public"
+  var MEDIA = "https://d352xpzo3kf3re.cloudfront.net", API = "https://kzamtrkxckztyxhcypqk.supabase.co", KEY = "sb_publishable_0AxpxZQlCOrCkTcjPVIhmg_Ed37MT0j";
   var q = new URLSearchParams(location.search), kind = ["p", "s", "v", "c", "r"].find(function (k) { return q.get(k); });
   var id = kind && q.get(kind), $ = function (x) { return document.getElementById(x); };
   var hdr = { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" };
@@ -37,7 +38,7 @@
   function sar(h) { return (h / 100).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " SAR"; }
   function show(title, price, by, desc, photo) {
     $("name").textContent = title || ""; $("price").textContent = price || ""; $("by").textContent = by || ""; $("desc").textContent = (desc || "").slice(0, 300);
-    if (photo) { $("pic").src = API + "/storage/v1/object/public/product-photos/" + encodeURI(photo); $("pic").hidden = false; }
+    if (photo) { $("pic").src = MEDIA + "/product-photos/" + encodeURI(photo); $("pic").hidden = false; }
     $("card").hidden = false; document.title = (title || "CashO") + " · CashO";
   }
   if (kind === "r" ? /^[A-Za-z0-9]{3,20}$/.test(id || "") : (id && /^[0-9a-f-]{36}$/i.test(id))) {
