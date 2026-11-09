@@ -139,7 +139,7 @@ const TABS = {
     const { reports } = await call("admin", { action: "reports" });
     v.append(el("p", { class: "mut" }, "Reports from users. Reply to serious ones within 24 hours (Apple expects fast action on abusive content)."));
     if (!reports.length) v.append(el("p", {}, "No open reports."));
-    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a video comment", product: "a product", vehicle: "a vehicle listing", vehicle_message: "a vehicle chat message" };
+    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a video comment", product: "a product", vehicle: "a vehicle listing", property: "a property listing", property_message: "a property chat message", vehicle_message: "a vehicle chat message" };
     for (const r of reports) {
       const who = `${r.seller_name} (@${r.seller_username})`;
       v.append(el("div", { class: "card" },
@@ -165,6 +165,7 @@ const TABS = {
             return [sel, el("label", {}, strike, " strike"),
               el("button", { class: "danger", onclick: () => confirm(`Remove this product (${reasonsP[sel.value]})${strike.checked ? " and give the seller a strike" : ""}? Paid orders that are not shipped yet are refunded.`) && removeProductFlow({ report_id: r.id, reason: sel.value, strike: strike.checked }) }, "Remove product")];
           })() : []),
+          r.target_type === "property" ? el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The listing fee is kept."); if (!why || !why.trim()) return; act("admin", { action: "review_report", id: r.id, report_action: "remove_property", reason: why.trim() }, "Property listing taken down"); } }, "Take the property listing down") : null,
           r.target_type === "vehicle" && r.vehicle_live ? el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The listing fee is kept."); if (!why || !why.trim()) return; const strike = confirm("Also give the seller a strike?"); act("admin", { action: "review_report", id: r.id, report_action: "remove_vehicle", reason: why.trim(), strike }, "Listing taken down"); } }, "Take down listing") : null,
           r.is_seller && !r.seller_suspended ? el("button", { class: "danger", onclick: () => confirm(`Suspend the SELLING of ${who}? They cannot sell or go live (their live ends now). They can still buy and chat. Undo in the Sellers tab.`) && act("admin", { action: "review_report", id: r.id, report_action: "suspend" }, "Selling suspended") }, "Suspend selling") : null,
           el("button", { class: "danger", onclick: async () => { if (!confirm(`BAN the account of ${who}? They cannot sign in at all until you unban them (below). Their orders and data stay.`)) return;
@@ -363,6 +364,42 @@ const TABS = {
       el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.sale_type} · fee ${sar(x.fee_halalas)}${x.fee_payment_id && !x.fee_refunded_at && ["rejected", "cancelled"].includes(x.status) ? " · FEE NOT REFUNDED YET" : ""}`),
       x.status === "live" ? el("div", { class: "row" }, ...x.photo_urls.slice(0, 3).map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:60px;border-radius:6px" }))),
         el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "vehicle_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
+  },
+
+  async Properties(v) {
+    const r = await call("admin", { action: "properties", status: "all" }), S = r.settings || {};
+    const on = (k) => S[k] === 1;
+    if (isOwner) {
+      v.append(el("div", { class: "card" }, el("b", {}, "How properties work"),
+        el("div", {}, "Sellers list apartments, villas, land and more. There is no buying and no auction: the price is just text, buyers press I'm interested, and they chat. The seller pays a listing fee by card (" + sar(S.property_fee || 10000) + "); a helper approves each listing, and a rejection refunds the fee."),
+        el("div", { class: "mut" }, "In Saudi Arabia a real-estate advert needs the advertiser's licence number from the Real Estate General Authority (REGA). The app asks for it while the licence switch is ON. Ask the lawyer before switching the feature ON for everybody.")));
+      const sw = (title, help, key) => el("div", { class: "card" }, el("b", {}, `${title}: ${on(key) ? "ON" : "OFF"}`), el("div", { class: "mut" }, help),
+        el("button", { class: on(key) ? "danger" : "", onclick: () => act("admin", { action: "property_setting", key, on: !on(key) }, "Saved") }, on(key) ? "Turn OFF" : "Turn ON"));
+      v.append(sw("1. Properties feature", "OFF = nobody sees or lists properties (the Properties tab in the Shop is hidden).", "properties_enabled"));
+      v.append(sw("2. Approve every listing automatically", "OFF = a helper checks each paid listing first (recommended).", "property_auto_approve"));
+      v.append(sw("3. Ask for the advertising licence number", "ON = a seller cannot list without it.", "property_license_required"));
+    }
+    const wait = r.properties.filter((x) => x.status === "pending_review"), rest = r.properties.filter((x) => x.status !== "pending_review");
+    v.append(el("h3", {}, `Waiting for approval (${wait.length})`));
+    if (!wait.length) v.append(el("p", { class: "mut" }, "None."));
+    for (const x of wait) {
+      const imgs = el("div", { class: "row" }, ...x.photo_urls.map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:90px;border-radius:6px" }))));
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${x.title} · ${x.type} · ${x.purpose}`),
+        el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.city}${x.district ? ", " + x.district : ""} · ${x.area_sqm} m² · ${x.price_text || "no price text"} · fee paid ${sar(x.fee_halalas)}`),
+        el("div", {}, [x.bedrooms != null ? x.bedrooms + " bed" : null, x.bathrooms != null ? x.bathrooms + " bath" : null, x.condition, x.built_year].filter((y) => y != null && y !== "").join(" · ")),
+        el("div", {}, "Licence: " + (x.license_no || "none")),
+        el("div", {}, x.description || ""), imgs, x.video_url ? el("a", { href: x.video_url, target: "_blank" }, "Watch the video") : null,
+        el("div", { class: "mut" }, "Check: real photos of this property, a sensible title, a licence number that looks right, no phone numbers or links, nothing that looks like a scam. Approve only if it is OK."),
+        el("div", { class: "row" },
+          el("button", { class: "primary", onclick: () => confirm(`Approve "${x.title}"? It goes live now.`) && act("admin", { action: "review_property", id: x.id, approve: true }, "Approved") }, "Approve"),
+          el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is refunded."); if (why && why.trim()) act("admin", { action: "review_property", id: x.id, approve: false, reason: why.trim() }, "Rejected and fee refunded"); } }, "Reject + refund fee"))));
+    }
+    v.append(el("h3", {}, `Other listings (${rest.length})`));
+    for (const x of rest) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.status}`),
+      el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.city} · fee ${sar(x.fee_halalas)}${["rejected", "cancelled"].includes(x.status) && !x.fee_refunded_at ? " · check the fee refund" : ""}`),
+      x.status === "live" ? el("div", { class: "row" }, ...x.photo_urls.slice(0, 3).map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:60px;border-radius:6px" }))),
+        el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "property_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
   },
 
   async Promotions(v) {
