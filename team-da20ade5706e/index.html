@@ -402,6 +402,68 @@ const TABS = {
         el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "property_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
   },
 
+  async "Email users"(v) {
+    v.append(el("div", { class: "card" }, el("b", {}, "Email your users"),
+      el("div", {}, "Marketing = news, offers, new products: it goes only to people who switched on \"Send me news and offers\" in the app, and every email has an Unsubscribe link."),
+      el("div", {}, "Important = account, orders, policy changes: it goes to everyone you choose. Do not use it for advertising."),
+      el("div", { class: "mut" }, "Emails are sent 25 per minute, so a big list takes a while. Send yourself a test first.")));
+    const kind = el("select", {}, el("option", { value: "marketing" }, "Marketing (only people who agreed)"), el("option", { value: "important" }, "Important (everyone chosen)"));
+    const aud = el("select", {}, el("option", { value: "all" }, "Everyone"), el("option", { value: "sellers" }, "Sellers only"), el("option", { value: "buyers" }, "Buyers only"));
+    const sen = el("input", { size: 50, placeholder: "Subject in English" }), sar_ = el("input", { size: 50, placeholder: "الموضوع بالعربية (اختياري)", dir: "rtl" });
+    const ben = el("textarea", { rows: 6, cols: 60, placeholder: "Message in English" }), bar_ = el("textarea", { rows: 6, cols: 60, placeholder: "الرسالة بالعربية (اختياري)", dir: "rtl" });
+    const to = el("input", { size: 30, placeholder: "your email for the test" });
+    const count = el("span", { class: "mut" }, "");
+    const refresh = async () => { try { const r = await call("admin", { action: "broadcast_count", audience: aud.value, kind: kind.value }); count.textContent = `This reaches ${r.count} people.`; } catch (e) { count.textContent = e.message; } };
+    kind.onchange = refresh; aud.onchange = refresh; refresh();
+    const body = () => ({ subject_en: sen.value, subject_ar: sar_.value, body_en: ben.value, body_ar: bar_.value, audience: aud.value, kind: kind.value });
+    v.append(el("div", { class: "card" }, el("div", { class: "row" }, kind, aud, count), el("div", {}, sen), el("div", {}, sar_), el("div", {}, ben), el("div", {}, bar_),
+      el("div", { class: "row" }, to, el("button", { onclick: () => act("admin", { action: "broadcast_test", ...body(), to: to.value }, "Test email sent") }, "Send a test to me")),
+      el("div", { class: "row" }, el("button", { class: "danger", onclick: async () => {
+        const r = await call("admin", { action: "broadcast_count", audience: aud.value, kind: kind.value });
+        if (confirm(`Send this ${kind.value} email to ${r.count} people? This cannot be undone.`)) act("admin", { action: "broadcast_create", ...body() }, "Queued: it is being sent");
+      } }, "Send to everyone chosen"))));
+    const r = await call("admin", { action: "broadcast_list" });
+    v.append(el("h3", {}, `Sent emails (${r.broadcasts.length})`));
+    for (const x of r.broadcasts) v.append(el("div", { class: "card" }, el("b", {}, x.subject_en),
+      el("div", { class: "mut" }, `${x.kind} · ${x.audience} · ${new Date(x.created_at).toLocaleString()} · by ${x.created_by || ""}`),
+      el("div", {}, `${x.sent} sent of ${x.total} · ${x.pending} waiting · ${x.failed} failed · ${x.skipped} had no email`)));
+  },
+
+  async Ads(v) {
+    const r = await call("admin", { action: "ads_list" }), S = r.settings, on = S.ads_enabled === 1;
+    v.append(el("div", { class: "card" }, el("b", {}, "How ads work"),
+      el("div", {}, "An ad is a short video (best under 30 seconds, MP4) shown between videos in the For You feed with a small \"Ad\" label. It can lead to a product, a seller, or a web page."),
+      el("div", {}, "You approve every ad because you upload it. Keep the switch OFF until you are ready.")));
+    v.append(el("div", { class: "card" }, el("b", {}, "Show ads in the app: " + (on ? "ON" : "OFF")),
+      el("button", { class: on ? "danger" : "", onclick: () => act("admin", { action: "ads_list", enabled: !on }, "Saved") }, on ? "Turn OFF" : "Turn ON")));
+    const every = el("input", { size: 4, inputmode: "numeric", value: String(S.ads_every || 7) });
+    v.append(el("div", { class: "card" }, el("b", {}, "One ad about every N videos"), el("div", { class: "row" }, every, el("button", { onclick: () => act("admin", { action: "ads_list", every: Number(every.value) }, "Saved") }, "Save (3 to 30)"))));
+    const title = el("input", { size: 30, placeholder: "Title (shown on the ad)" }), file = el("input", { type: "file", accept: "video/mp4,video/quicktime" });
+    const type = el("select", {}, el("option", { value: "none" }, "Leads nowhere"), el("option", { value: "product" }, "A product (paste its id)"), el("option", { value: "seller" }, "A seller (paste the seller id)"), el("option", { value: "url" }, "A web page (https://...)"));
+    const target = el("input", { size: 40, placeholder: "id or https:// address" }), days = el("input", { size: 3, value: "14", inputmode: "numeric" });
+    v.append(el("div", { class: "card" }, el("b", {}, "Add an ad"), el("div", {}, title), el("div", {}, file), el("div", { class: "row" }, type, target), el("div", { class: "row" }, "Days to show (0 = no end):", days,
+      el("button", { onclick: async () => {
+        try {
+          const f = file.files[0]; if (!f) throw new Error("Choose a video file");
+          say("Uploading the video…", "ok");
+          const up = await call("admin", { action: "ad_upload_url" });
+          const fd = new FormData(); fd.append("cacheControl", "3600"); fd.append("", f);
+          const res = await fetch(up.url, { method: "PUT", body: fd });
+          if (!res.ok) throw new Error("The upload failed (" + res.status + "). Try a smaller MP4.");
+          const t = target.value.trim();
+          await call("admin", { action: "ad_create", title: title.value, video_path: up.path, target_type: type.value, target_id: type.value === "product" || type.value === "seller" ? t : null, target_url: type.value === "url" ? t : null, days: Number(days.value) });
+          say("Ad added", "ok"); await show(tab);
+        } catch (e) { say(e.message, "bad"); }
+      } }, "Upload and add"))));
+    v.append(el("h3", {}, `Ads (${r.ads.length})`));
+    for (const x of r.ads) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.status}`),
+      el("div", { class: "mut" }, `${x.target_type}${x.target_url ? " " + x.target_url : ""} · ${x.ends_at ? "until " + new Date(x.ends_at).toLocaleDateString() : "no end"}`),
+      el("div", {}, `Shown ${x.views} times · tapped ${x.taps} times`),
+      el("div", { class: "row" },
+        el("button", { onclick: () => act("admin", { action: "ad_status", id: x.id, status: x.status === "active" ? "paused" : "active" }, "Saved") }, x.status === "active" ? "Pause" : "Resume"),
+        el("button", { class: "danger", onclick: () => { if (confirm("Delete this ad?")) act("admin", { action: "ad_delete", id: x.id }, "Deleted"); } }, "Delete"))));
+  },
+
   async Promotions(v) {
     const r = await call("admin", { action: "promo_list" }), S = r.settings;
     const on = (k) => S[k] === 1;
@@ -569,7 +631,7 @@ $("go").onclick = async () => {
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
-  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts", "Referrals", "Promotions"].includes(n));
+  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts", "Referrals", "Promotions", "Email users", "Ads"].includes(n));
   say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except money, payouts and team).`, "ok");
   $("q").hidden = false;
   const nav = $("tabs"); nav.hidden = false; nav.replaceChildren(...names.map((n) => el("button", { onclick: () => show(n) }, n)));
