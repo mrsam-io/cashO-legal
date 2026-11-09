@@ -214,6 +214,12 @@ const TABS = {
 
   async Sellers(v) {
     const { sellers } = await call("admin", { action: "sellers" });
+    if (isOwner) {
+      const { auto } = await call("admin", { action: "seller_setting" });
+      v.append(el("div", { class: "card" }, el("b", {}, "Approve new sellers automatically: " + (auto ? "ON" : "OFF")),
+        el("div", { class: "mut" }, "ON = a new seller's IBAN is marked verified at once, with no check of the IBAN proof. Payouts then go to the IBAN they typed. OFF = a helper checks the proof first (recommended for real money)."),
+        el("button", { class: auto ? "danger" : "primary", onclick: () => confirm(auto ? "Switch OFF automatic approval?" : "Switch ON automatic approval of new sellers?") && act("admin", { action: "seller_setting", on: !auto }, "Saved") }, auto ? "Switch OFF" : "Switch ON")));
+    }
     for (const s of sellers) {
       v.append(el("div", { class: "card" },
         el("b", {}, `${s.full_name} (@${s.username}) · ${s.kind}`),
