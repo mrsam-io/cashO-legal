@@ -3,61 +3,176 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Casho</title>
-<link rel="stylesheet" href="style.css">
+<title>Casho · كاشو</title>
+<meta name="description" content="Shop live from sellers in Saudi Arabia. Watch, bid and buy on Casho. · تسوق مباشرة من بائعين في السعودية على كاشو.">
+<meta property="og:site_name" content="Casho · كاشو">
+<meta property="og:title" content="Casho · كاشو">
+<meta property="og:description" content="Shop live from sellers in Saudi Arabia. Watch, bid and buy on Casho.">
+<meta property="og:image" content="https://mrsam-io.github.io/cashO-legal/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#122D24">
+<link rel="icon" href="assets/icon.png">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<style>
+  @font-face { font-family: "Manrope"; src: url(assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight: 200 800; font-display: swap; }
+  @font-face { font-family: "Tajawal"; src: url(assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Tajawal"; src: url(assets/fonts/Tajawal-Bold.ttf) format("truetype"); font-weight: 700; font-display: swap; }
+  @font-face { font-family: "Tajawal"; src: url(assets/fonts/Tajawal-ExtraBold.ttf) format("truetype"); font-weight: 800; font-display: swap; }
+
+  /* Casho brand kit v1: emerald, deep emerald, forest, ivory, cream, mint, gold */
+  :root {
+    --emerald:#188B67; --deep:#126C50; --forest:#122D24; --ivory:#F1E8D6; --cream:#FFEBC6; --mint:#48C5A2; --gold:#BFA060;
+    --bg:var(--ivory); --card:#FFFDF8; --fg:#122D24; --mut:#5f6f66; --line:#e3d8c0; --price:var(--deep); --btn:var(--emerald); --btnfg:#fff;
+    --font: "Manrope","Tajawal",-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:var(--forest); --card:#183A2F; --fg:#F5EEDD; --mut:#a9bdb3; --line:#27493c; --price:var(--cream); --btn:var(--emerald); }
+  }
+  * { box-sizing:border-box; }
+  html[lang=ar] { --font: "Tajawal","Manrope",-apple-system,"Segoe UI",sans-serif; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 var(--font); min-height:100vh; display:flex; flex-direction:column; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; max-width:560px; width:100%; margin:0 auto; }
+  header img { height:34px; width:auto; display:block; }
+  .logo-dark { display:none; } @media (prefers-color-scheme: dark) { .logo-light { display:none; } .logo-dark { display:block; } }
+  #lang { background:none; border:1px solid var(--line); color:var(--fg); font:600 14px var(--font); padding:6px 14px; border-radius:999px; cursor:pointer; }
+  main { flex:1; width:100%; max-width:560px; margin:0 auto; padding:4px 20px 28px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:22px; overflow:hidden; box-shadow:0 10px 30px rgba(18,45,36,.12); }
+  #pic { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:var(--line); }
+  .body { padding:18px 20px 20px; }
+  .chip { display:inline-block; background:var(--forest); color:var(--cream); font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; padding:4px 12px; border-radius:999px; border:1px solid var(--gold); }
+  h1 { font-size:26px; line-height:1.25; font-weight:800; margin:12px 0 6px; overflow-wrap:anywhere; }
+  .price { font-size:24px; font-weight:800; color:var(--price); margin:0 0 6px; }
+  .meta, .by { color:var(--mut); font-size:15px; margin:2px 0; }
+  .desc { margin:12px 0 0; white-space:pre-line; color:var(--fg); opacity:.9; overflow-wrap:anywhere; }
+  .brandcard { text-align:center; padding:34px 20px; } .brandcard img { width:96px; height:96px; border-radius:22px; }
+  .brandcard h1 { margin-top:16px; }
+  .actions { display:grid; gap:12px; margin-top:20px; }
+  .btn { display:flex; align-items:center; justify-content:center; gap:10px; min-height:54px; border-radius:16px; font:800 17px var(--font); text-decoration:none; text-align:center; padding:0 18px; }
+  .btn.primary { background:var(--btn); color:var(--btnfg); box-shadow:0 6px 16px rgba(24,139,103,.35); }
+  .btn.second { background:transparent; color:var(--fg); border:1.5px solid var(--gold); }
+  .btn.second img { width:26px; height:26px; border-radius:7px; }
+  .btn[aria-disabled=true] { opacity:.75; cursor:default; }
+  .hint { color:var(--mut); font-size:14px; text-align:center; margin:14px 0 0; }
+  .skel { height:220px; background:linear-gradient(90deg,var(--line),transparent,var(--line)); background-size:200% 100%; animation:sh 1.4s infinite linear; }
+  @keyframes sh { to { background-position:-200% 0; } }
+  footer { text-align:center; color:var(--mut); font-size:13px; padding:8px 20px 28px; }
+  footer a { color:var(--mut); margin:0 8px; }
+  [hidden] { display:none !important; }
+</style>
 </head>
 <body>
+<header>
+  <a href="./"><img class="logo-light" id="logoL" src="assets/logo-light.png" alt="Casho"><img class="logo-dark" id="logoD" src="assets/logo-dark.png" alt="Casho"></a>
+  <button id="lang" type="button">العربية</button>
+</header>
 <main>
-<h1>Casho</h1>
-<div id="card" hidden>
-  <img id="pic" alt="" hidden>
-  <h2 id="name"></h2>
-  <p id="price"></p>
-  <p id="by" class="mut"></p>
-  <p id="desc"></p>
-</div>
-<p id="msg">Opening Casho… · جارٍ فتح Casho…</p>
-<p><a id="open" class="btn" href="#">Open in the app · افتح في التطبيق</a></p>
-<p class="mut">If nothing happens, Casho is not installed on this phone yet. · إذا لم يحدث شيء فلم يتم تثبيت Casho على هذا الجوال بعد.</p>
+  <div class="card" id="card">
+    <div class="skel" id="skel"></div>
+    <img id="pic" alt="" hidden>
+    <div class="body" id="body" hidden>
+      <span class="chip" id="chip"></span>
+      <h1 id="name"></h1>
+      <p class="price" id="price"></p>
+      <p class="meta" id="meta"></p>
+      <p class="by" id="by"></p>
+      <p class="desc" id="desc"></p>
+    </div>
+    <div class="brandcard" id="brandcard" hidden>
+      <img src="assets/icon.png" alt="">
+      <h1 id="bname">Casho</h1>
+      <p class="meta" id="bdesc"></p>
+    </div>
+  </div>
+  <div class="actions">
+    <a id="open" class="btn primary" href="#"></a>
+    <a id="store" class="btn second" href="#" aria-disabled="true"><img src="assets/icon.png" alt=""><span id="storeText"></span></a>
+  </div>
+  <p class="hint" id="hint"></p>
 </main>
-<style>
-  #card { border:1px solid var(--line); border-radius:14px; overflow:hidden; margin:16px 0; }
-  #card > *:not(img) { margin-inline:16px; } #card h2 { margin-top:14px; } #card #desc { margin-bottom:16px; white-space:pre-line; }
-  #pic { width:100%; max-height:420px; object-fit:cover; display:block; }
-  .btn { display:block; text-align:center; background:#f5c518; color:#000; font-weight:700; padding:14px; border-radius:12px; text-decoration:none; }
-</style>
+<footer>
+  <a href="terms.html" id="fTerms"></a>·<a href="privacy.html" id="fPriv"></a>
+  <div id="from"></div>
+</footer>
 <script>
-  // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>  ?c=<vehicle listing id>  ?r=<referral code>
-  // The page shows a small preview (read-only public data) and also tries to open the app.
+  // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>  ?c=<vehicle listing id>  ?h=<property id>  ?r=<referral code>
+  // The page shows a small preview (read-only public data) and, on a phone, also tries to open the app.
   // MEDIA = CloudFront cache in front of Supabase Storage. To go back to plain Supabase: API + "/storage/v1/object/public"
   var MEDIA = "https://d352xpzo3kf3re.cloudfront.net", API = "https://kzamtrkxckztyxhcypqk.supabase.co", KEY = "sb_publishable_0AxpxZQlCOrCkTcjPVIhmg_Ed37MT0j";
-  var q = new URLSearchParams(location.search), kind = ["p", "s", "v", "c", "r"].find(function (k) { return q.get(k); });
-  var id = kind && q.get(kind), $ = function (x) { return document.getElementById(x); };
-  var hdr = { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" };
-  function get(path) { return fetch(API + "/rest/v1/" + path, { headers: hdr }).then(function (r) { return r.json(); }); }
-  function sar(h) { return (h / 100).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " SAR"; }
-  function show(title, price, by, desc, photo) {
-    $("name").textContent = title || ""; $("price").textContent = price || ""; $("by").textContent = by || ""; $("desc").textContent = (desc || "").slice(0, 300);
-    if (photo) { $("pic").src = MEDIA + "/product-photos/" + encodeURI(photo); $("pic").hidden = false; }
-    $("card").hidden = false; document.title = (title || "Casho") + " · Casho";
+  var APP_STORE_URL = "";   // put the App Store link here when the app is live; until then the button says "coming soon"
+  var T = {
+    en: { open: "Open in Casho", store: "Download the app", soon: "Coming soon on the App Store", hint: "If nothing happens, Casho is not installed on this phone yet.", terms: "Terms", priv: "Privacy", from: "from Mrsam", other: "العربية",
+          tagline: "Shop live from sellers in Saudi Arabia. Watch, bid and buy.", bad: "This link is not valid.", item: "Item", video: "Video", car: "Vehicle", auction: "Auction", property: "Property", seller: "Seller",
+          sale: "For sale", rent: "For rent", code: "Referral code", codeHint: "Open Casho and enter this code at checkout for a discount.", ask: "Ask the seller for the price", watch: "Watch lives and shop on Casho." },
+    ar: { open: "افتح في كاشو", store: "حمّل التطبيق", soon: "قريبًا على App Store", hint: "إذا لم يحدث شيء فلم يتم تثبيت كاشو على هذا الجوال بعد.", terms: "الشروط", priv: "الخصوصية", from: "من مرسام", other: "English",
+          tagline: "تسوق مباشرة من بائعين في السعودية. شاهد وزايد واشتر.", bad: "هذا الرابط غير صالح.", item: "منتج", video: "فيديو", car: "مركبة", auction: "مزاد", property: "عقار", seller: "بائع",
+          sale: "للبيع", rent: "للإيجار", code: "رمز الإحالة", codeHint: "افتح كاشو وأدخل هذا الرمز عند الدفع للحصول على خصم.", ask: "اسأل البائع عن السعر", watch: "شاهد البثوث المباشرة وتسوق على كاشو." }
+  };
+  var lang = (localStorage.getItem("casho_lang") || ((navigator.language || "").toLowerCase().indexOf("ar") === 0 ? "ar" : "en"));
+  var $ = function (x) { return document.getElementById(x); };
+  var current = null;   // what the card shows, so a language switch can redraw it
+
+  function applyLang() {
+    var t = T[lang];
+    document.documentElement.lang = lang; document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    $("logoL").src = lang === "ar" ? "assets/logo-ar-light.png" : "assets/logo-light.png";
+    $("logoD").src = lang === "ar" ? "assets/logo-ar-dark.png" : "assets/logo-dark.png";
+    $("lang").textContent = t.other; $("open").textContent = t.open; $("hint").textContent = t.hint;
+    $("storeText").textContent = APP_STORE_URL ? t.store : t.soon;
+    $("fTerms").textContent = t.terms; $("fPriv").textContent = t.priv; $("from").textContent = t.from;
+    $("bdesc").textContent = t.tagline; $("bname").textContent = lang === "ar" ? "كاشو" : "Casho";
+    if (current) draw();
   }
+  $("lang").onclick = function () { lang = lang === "ar" ? "en" : "ar"; try { localStorage.setItem("casho_lang", lang); } catch (e) {} applyLang(); };
+  if (APP_STORE_URL) { $("store").href = APP_STORE_URL; $("store").removeAttribute("aria-disabled"); } else { $("store").onclick = function (e) { e.preventDefault(); }; }
+
+  function sar(h) { return (h / 100).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " SAR"; }
+  function get(path) { return fetch(API + "/rest/v1/" + path, { headers: hdr }).then(function (r) { return r.json(); }); }
+  var hdr = { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" };
+  function rpc(name, body) { return fetch(API + "/rest/v1/rpc/" + name, { method: "POST", headers: hdr, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
+
+  // c = what to show: { chip: key, title, price: text or key, meta: text, by, desc, photo }
+  function show(c) { current = c; draw(); }
+  function draw() {
+    var t = T[lang], c = current;
+    $("skel").hidden = true; $("brandcard").hidden = true; $("body").hidden = false;
+    $("chip").textContent = t[c.chip] || c.chip;
+    $("name").textContent = c.title || ""; $("price").textContent = c.price === "ask" ? t.ask : (c.price || ""); $("price").hidden = !c.price;
+    $("meta").textContent = typeof c.meta === "function" ? c.meta(t) : (c.meta || ""); $("meta").hidden = !$("meta").textContent;
+    $("by").textContent = ""; if (c.by) { var bd = document.createElement("bdi"); bd.textContent = c.by; $("by").appendChild(bd); } $("by").hidden = !c.by; $("desc").textContent = (c.desc || "").slice(0, 300); $("desc").hidden = !c.desc;
+    if (c.photo) { $("pic").src = MEDIA + "/product-photos/" + encodeURI(c.photo); $("pic").hidden = false; } else { $("pic").hidden = true; }
+    document.title = (c.title || "Casho") + " · Casho";
+  }
+  function brand(title, desc) { $("skel").hidden = true; $("body").hidden = true; $("pic").hidden = true; $("brandcard").hidden = false; if (title) $("bname").textContent = title; if (desc) $("bdesc").textContent = desc; }
+
+  var q = new URLSearchParams(location.search), kind = ["p", "s", "v", "c", "h", "r"].find(function (k) { return q.get(k); });
+  var id = kind && q.get(kind);
+  applyLang();
   if (kind === "r" ? /^[A-Za-z0-9]{3,20}$/.test(id || "") : (id && /^[0-9a-f-]{36}$/i.test(id))) {
     var app = "ocash://" + kind + "/" + id;
     $("open").href = app;
-    if (kind === "r") show("Casho", "", "Code: " + id.toUpperCase(), "Open Casho and enter this code at checkout for a discount. · افتح كاشو وأدخل هذا الرمز عند الدفع للحصول على خصم.");
-    else if (kind === "c") fetch(API + "/rest/v1/rpc/vehicle_listing", { method: "POST", headers: hdr, body: JSON.stringify({ p_id: id }) }).then(function (r) { return r.json(); }).then(function (v) {
-      if (v && v.title) show(v.title, v.sale_type === "auction" ? "Auction · مزاد" : v.price_halalas ? sar(v.price_halalas) : "", v.seller_name ? "@" + (v.seller_username || v.seller_name) : "", v.description, (v.photos || [])[0]);
-    }).catch(function () {});
+    if (kind === "r") { brand("Casho", T[lang].code + ": " + id.toUpperCase() + ". " + T[lang].codeHint); }
+    else if (kind === "c") rpc("vehicle_listing", { p_id: id }).then(function (v) {
+      if (!v || !v.title) return brand();
+      show({ chip: v.sale_type === "auction" ? "auction" : "car", title: v.title, price: v.sale_type === "auction" ? "" : (v.price_halalas ? sar(v.price_halalas) : "ask"),
+             meta: [v.brand, v.model, v.year].filter(Boolean).join(" ") + (v.km ? " · " + v.km.toLocaleString("en-US") + " km" : ""),
+             by: v.seller_name ? "@" + (v.seller_username || v.seller_name) : "", desc: v.description, photo: (v.photos || [])[0] });
+    }).catch(function () { brand(); });
+    else if (kind === "h") rpc("property_listing", { p_id: id }).then(function (v) {
+      if (!v || !v.title) return brand();
+      show({ chip: "property", title: v.title, price: v.price_text || "ask",
+             meta: function (t) { return [v.purpose === "rent" ? t.rent : t.sale, v.city, v.area_sqm ? v.area_sqm + " m²" : ""].filter(Boolean).join(" · "); },
+             by: v.seller_name ? "@" + (v.seller_username || v.seller_name) : "", desc: v.description, photo: (v.photos || [])[0] });
+    }).catch(function () { brand(); });
     else if (kind === "s") get("profiles?id=eq." + id + "&select=display_name,username&limit=1").then(function (r) {
-      if (r && r[0]) show(r[0].display_name || "@" + r[0].username, "", r[0].username ? "@" + r[0].username : "", "Watch lives and shop on Casho. · شاهد البثوث المباشرة وتسوق على كاشو.");
-    }).catch(function () {});
+      if (r && r[0]) brand(r[0].display_name || "@" + r[0].username, T[lang].watch + (r[0].username ? "  @" + r[0].username : "")); else brand();
+    }).catch(function () { brand(); });
     else get("products?id=eq." + id + "&select=title,price_halalas,photos,description,seller_id&limit=1").then(function (r) {
-      var p = r && r[0]; if (!p) return;
-      show(p.title, sar(p.price_halalas), "", p.description, (p.photos || [])[0]);
-      get("profiles?id=eq." + p.seller_id + "&select=display_name,username&limit=1").then(function (s) { if (s && s[0]) $("by").textContent = "@" + (s[0].username || s[0].display_name); });
-    }).catch(function () {});
-    location.href = app;
-  } else { $("msg").textContent = "This link is not valid. · هذا الرابط غير صالح."; }
+      var p = r && r[0]; if (!p) return brand();
+      show({ chip: kind === "v" ? "video" : "item", title: p.title, price: sar(p.price_halalas), desc: p.description, photo: (p.photos || [])[0] });
+      get("profiles?id=eq." + p.seller_id + "&select=display_name,username&limit=1").then(function (s) { if (s && s[0] && current) { current.by = "@" + (s[0].username || s[0].display_name); draw(); } });
+    }).catch(function () { brand(); });
+    if (/iPhone|iPad|Android/i.test(navigator.userAgent)) location.href = app;   // on a phone, also try to open the app
+  } else { brand("Casho", T[lang].bad); $("open").href = "./"; }
 </script>
 </body>
 </html>
