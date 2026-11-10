@@ -41,7 +41,7 @@ const BASE = "https://kzamtrkxckztyxhcypqk.supabase.co/functions/v1/";
 let secret = "", tab = "", isOwner = false;
 const $ = (id) => document.getElementById(id);
 const sar = (h) => (h / 100).toLocaleString("en", { minimumFractionDigits: 2 }) + " SAR";
-const TEAM_URL = "https://mrsam-io.github.io/cashO-legal/team-da20ade5706e/";   // the link friends open (the published copy of this page)
+const TEAM_URL = "https://appcasho.com/team-da20ade5706e/";   // the link friends open (the published copy of this page)
 const orderNo = (id) => "#" + String(id || "").slice(0, 8).toUpperCase();   // the same short number the buyer and the seller see on their order
 const when = (t) => t ? new Date(t).toLocaleString() : "";
 
@@ -520,7 +520,7 @@ const TABS = {
       lab("Valid until (optional)", "The last day the code works (Saudi time). Leave empty for no end date.", until),
       el("div", { class: "row" }, el("button", { class: "primary", onclick: () => act("admin", { action: "referral_create", code: code.value, influencer: who.value,
         discount_halalas: disc.value ? Math.round(Number(disc.value) * 100) : null, share_bps: share.value ? Math.round(Number(share.value) * 100) : null, max_orders: mx.value !== "" ? Math.round(Number(mx.value)) : null, max_uses: tot.value ? Math.round(Number(tot.value)) : null, expires_on: until.value || null }, "Code created") }, "Create code"))));
-    const base = "https://mrsam-io.github.io/cashO-legal/open.html?r=";
+    const base = "https://appcasho.com/open.html?r=";
     for (const c of r.codes) {
       const owed = Math.max(0, Number(c.earned_halalas) - Number(c.paid_halalas));
       v.append(el("div", { class: "card" },
