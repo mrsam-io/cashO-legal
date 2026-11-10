@@ -5,26 +5,35 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Casho Admin</title>
+<link rel="icon" href="https://appcasho.com/assets/icon.png"><meta name="theme-color" content="#122D24">
 <style>
-  :root { --bg:#fff; --fg:#111; --mut:#666; --line:#ddd; --card:#f6f6f6; --btn:#111; --btnfg:#fff; --bad:#c62828; --ok:#2e7d32; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#121212; --fg:#eee; --mut:#999; --line:#333; --card:#1c1c1c; --btn:#eee; --btnfg:#111; --bad:#ef5350; --ok:#66bb6a; } }
-  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.4 -apple-system, system-ui, sans-serif; max-width:1000px; margin-inline:auto; }
-  h1 { font-size:20px; margin:0 0 12px; }
+  @font-face { font-family:"Manrope"; src:url(https://appcasho.com/assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight:200 800; font-display:swap; }
+  @font-face { font-family:"Tajawal"; src:url(https://appcasho.com/assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight:400; font-display:swap; }
+  /* Casho brand kit */
+  :root { --emerald:#188B67; --deep:#126C50; --forest:#122D24; --gold:#BFA060; --bg:#F1E8D6; --fg:#122D24; --mut:#5f6f66; --line:#e3d8c0; --card:#FFFDF8; --btn:#188B67; --btnfg:#fff; --bad:#c62828; --ok:#126C50; --head:#126C50; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#122D24; --fg:#F5EEDD; --mut:#a9bdb3; --line:#27493c; --card:#183A2F; --btn:#188B67; --btnfg:#fff; --bad:#ef7b76; --ok:#48C5A2; --head:#FFEBC6; } }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.45 "Manrope","Tajawal",-apple-system,system-ui,sans-serif; max-width:1000px; margin-inline:auto; }
+  header.brand { display:flex; align-items:center; gap:12px; padding:6px 0 14px; border-bottom:2px solid var(--gold); margin-bottom:12px; }
+  header.brand img { height:36px; width:auto; display:block; } header.brand .logo-dark { display:none; }
+  @media (prefers-color-scheme: dark) { header.brand .logo-light { display:none; } header.brand .logo-dark { display:block; } }
+  header.brand span { font-weight:800; font-size:18px; color:var(--head); }
+  h1 { font-size:20px; margin:0 0 12px; color:var(--head); } h2, h3 { color:var(--head); }
   nav { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
-  button, select, input { font:inherit; padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
-  button { cursor:pointer; } button.primary { background:var(--btn); color:var(--btnfg); border-color:var(--btn); }
-  button.danger { color:var(--bad); } nav button.on { background:var(--btn); color:var(--btnfg); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin:10px 0; }
+  button, select, input, textarea { font:inherit; padding:8px 13px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
+  button { cursor:pointer; font-weight:600; } button.primary { background:var(--btn); color:var(--btnfg); border-color:var(--btn); }
+  button.danger { color:var(--bad); } nav button.on { background:var(--deep); color:#fff; border-color:var(--deep); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin:10px 0; box-shadow:0 4px 14px rgba(18,45,36,.07); }
   .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
   .mut { color:var(--mut); font-size:13px; } .bad { color:var(--bad); } .ok { color:var(--ok); }
-  table { width:100%; border-collapse:collapse; font-size:14px; } td, th { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; word-break:break-word; }
+  table { width:100%; border-collapse:collapse; font-size:14px; } td, th { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; word-break:break-word; } th { color:var(--head); }
   #msg { min-height:20px; margin:8px 0; }
-  a { color:var(--fg); text-decoration:underline; }
+  a { color:var(--deep); } @media (prefers-color-scheme: dark) { a { color:var(--mint,#48C5A2); } }
   [hidden] { display:none !important; }
 </style>
 </head>
 <body>
-<h1>Casho Admin</h1>
+<header class="brand"><img class="logo-light" src="https://appcasho.com/assets/logo-light.png" alt="Casho"><img class="logo-dark" src="https://appcasho.com/assets/logo-dark.png" alt="Casho"><span>Admin</span></header>
 <div class="row">
   <input id="secret" type="password" placeholder="Admin secret" autocomplete="off" size="36">
   <button class="primary" id="go">Open</button>
