@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casho Admin</title>
+<link rel="icon" href="https://appcasho.com/assets/icon.png"><meta name="theme-color" content="#122D24">
+<style>
+  @font-face { font-family:"Manrope"; src:url(https://appcasho.com/assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight:200 800; font-display:swap; }
+  @font-face { font-family:"Tajawal"; src:url(https://appcasho.com/assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight:400; font-display:swap; }
+  /* Casho brand kit */
+  :root { --emerald:#188B67; --deep:#126C50; --forest:#122D24; --gold:#BFA060; --bg:#F1E8D6; --fg:#122D24; --mut:#5f6f66; --line:#e3d8c0; --card:#FFFDF8; --btn:#188B67; --btnfg:#fff; --bad:#c62828; --ok:#126C50; --head:#126C50; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#122D24; --fg:#F5EEDD; --mut:#a9bdb3; --line:#27493c; --card:#183A2F; --btn:#188B67; --btnfg:#fff; --bad:#ef7b76; --ok:#48C5A2; --head:#FFEBC6; } }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.45 "Manrope","Tajawal",-apple-system,system-ui,sans-serif; max-width:1000px; margin-inline:auto; }
+  header.brand { display:flex; align-items:center; gap:12px; padding:6px 0 14px; border-bottom:2px solid var(--gold); margin-bottom:12px; }
+  header.brand img { height:36px; width:auto; display:block; } header.brand .logo-dark { display:none; }
+  @media (prefers-color-scheme: dark) { header.brand .logo-light { display:none; } header.brand .logo-dark { display:block; } }
+  header.brand span { font-weight:800; font-size:18px; color:var(--head); }
+  h1 { font-size:20px; margin:0 0 12px; color:var(--head); } h2, h3 { color:var(--head); }
+  nav { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+  button, select, input, textarea { font:inherit; padding:8px 13px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
+  button { cursor:pointer; font-weight:600; } button.primary { background:var(--btn); color:var(--btnfg); border-color:var(--btn); }
+  button.danger { color:var(--bad); } nav button.on { background:var(--deep); color:#fff; border-color:var(--deep); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin:10px 0; box-shadow:0 4px 14px rgba(18,45,36,.07); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+  .mut { color:var(--mut); font-size:13px; } .bad { color:var(--bad); } .ok { color:var(--ok); }
+  table { width:100%; border-collapse:collapse; font-size:14px; } td, th { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; word-break:break-word; } th { color:var(--head); }
+  #msg { min-height:20px; margin:8px 0; }
+  a { color:var(--deep); } @media (prefers-color-scheme: dark) { a { color:var(--mint,#48C5A2); } }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<header class="brand"><img class="logo-light" src="https://appcasho.com/assets/logo-light.png" alt="Casho"><img class="logo-dark" src="https://appcasho.com/assets/logo-dark.png" alt="Casho"><span>Admin</span></header>
+<div class="row">
+  <input id="secret" type="password" placeholder="Admin secret" autocomplete="off" size="36">
+  <button class="primary" id="go">Open</button>
+</div>
+<div id="msg" class="mut">The secret stays in this tab only. Close the tab and it is gone.</div>
+<nav id="tabs" hidden></nav>
+<input id="q" type="search" placeholder="Search this tab (name, username, IBAN, product, status...)" size="50" hidden>
+<div class="mut" id="count"></div>
+<div id="view"></div>
+
+<script>
+// Everything shown from the database is put in with textContent, never as HTML, so a hostile note or name cannot run code here.
+const BASE = "https://kzamtrkxckztyxhcypqk.supabase.co/functions/v1/";
+let secret = "", tab = "", isOwner = false;
+const $ = (id) => document.getElementById(id);
+const sar = (h) => (h / 100).toLocaleString("en", { minimumFractionDigits: 2 }) + " SAR";
+const TEAM_URL = "https://appcasho.com/admin/";   // the link friends open (the published copy of this page)
+const orderNo = (id) => "#" + String(id || "").slice(0, 8).toUpperCase();   // the same short number the buyer and the seller see on their order
+const when = (t) => t ? new Date(t).toLocaleString() : "";
+
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) { if (k === "onclick") n.onclick = v; else if (k === "class") n.className = v; else n.setAttribute(k, v); }
+  for (const k of kids.flat()) if (k != null) n.append(k);
+  return n;
+}
+function say(text, cls = "mut") { const m = $("msg"); m.className = cls; m.textContent = text; }
+
+async function call(fn, body) {
+  const r = await fetch(BASE + fn, { method: "POST", headers: { "x-admin-secret": secret, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({ error: "Bad reply" }));
+  if (!r.ok || j.error) throw new Error(j.error || "Error " + r.status);
+  return j;
+}
+async function act(fn, body, done) {   // run an action, show the result, reload the tab
+  try { const j = await call(fn, body); say((done || "Done") + (j.emailed === true ? " · seller emailed" : j.emailed === false ? " · no email sent (seller has no email or email not set up)" : ""), "ok"); await show(tab); return j; } catch (e) { say(e.message, "bad"); }
+}
+async function removeProductFlow(a) {   // a = {product_id, reason, strike, report_id?}: removes a product, then handles the refunds
+  try {
+    const j = a.report_id
+      ? await call("admin", { action: "review_report", id: a.report_id, report_action: "remove_product", reason: a.reason, strike: a.strike })
+      : await call("admin", { action: "remove_product", product_id: a.product_id, reason: a.reason, strike: a.strike });
+    let msg = "Product removed, seller emailed" + (j.strike ? " · strike given" : "") + (j.auction_cancelled ? " · auction cancelled" : "");
+    if (j.refunds_queued) {
+      if (isOwner) { try { await call("refund", { action: "run" }); msg += ` · ${j.refunds_queued} paid order(s) refunded`; } catch (e) { msg += ` · ${j.refunds_queued} refund(s) waiting: press "Process waiting refunds" in the Claims tab`; } }
+      else msg += ` · ${j.refunds_queued} paid order(s) waiting for a refund: ask the owner to press "Process waiting refunds"`;
+    }
+    if (j.orders_in_progress) msg += ` · ${j.orders_in_progress} order(s) already shipped: handle them in Orders / Claims`;
+    say(msg, "ok"); await show(tab);
+  } catch (e) { say(e.message, "bad"); }
+}
+// CSV for Excel / Numbers / Google Sheets. The BOM makes Arabic names show correctly. A cell starting with = + - @ gets a leading ' so a hostile
+// name or product title can never run as a spreadsheet formula.
+function toCSV(rows) {
+  const esc = (v) => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  return "﻿" + rows.map((r) => r.map(esc).join(",")).join("\r\n");
+}
+function download(name, rows) {
+  const a = el("a", { href: URL.createObjectURL(new Blob([toCSV(rows)], { type: "text/csv;charset=utf-8" })), download: name });
+  document.body.append(a); a.click(); a.remove();
+}
+const num = (h) => (h / 100).toFixed(2);   // halalas -> "1295.00"
+const day = () => new Date().toISOString().slice(0, 10);
+
+// the search box hides cards and table rows of the current tab that do not contain the text
+function applyFilter() {
+  const t = $("q").value.trim().toLowerCase();
+  const items = [...$("view").querySelectorAll(".card, tr")].filter((n) => !n.querySelector("th"));
+  let shown = 0;
+  for (const n of items) { const hit = !t || n.textContent.toLowerCase().includes(t); n.hidden = !hit; if (hit) shown++; }
+  $("count").textContent = t ? `${shown} of ${items.length} match` : "";
+}
+
+function link(url, text) { return url ? el("a", { href: url, target: "_blank", rel: "noopener" }, text) : el("span", { class: "mut" }, "no photo"); }
+
+const TABS = {
+  async Claims(v) {
+    const find = el("input", { placeholder: "Find a claim by order number (#A1B2C3D4 or full ID)", size: "34", value: window.claimQuery || "" });
+    const findBtn = el("button", { onclick: () => { window.claimQuery = find.value.trim(); show("Claims"); } }, "Find");
+    find.addEventListener("keydown", (e) => { if (e.key === "Enter") findBtn.click(); });
+    v.append(el("div", { class: "row" }, find, findBtn, window.claimQuery ? el("button", { onclick: () => { window.claimQuery = ""; show("Claims"); } }, "Show open claims") : null));
+    const { claims } = await call("admin", { action: "claims", q: window.claimQuery || undefined });
+    if (!claims.length) v.append(el("p", { class: "mut" }, window.claimQuery ? "No claim for this order number." : "No open claims."));
+    for (const c of claims) {
+      const o = c.orders || {};
+      v.append(el("div", { class: "card" },
+        el("b", {}, `Order ${orderNo(o.id)} · ${o.product_title || "?"} · ${sar(o.total_halalas || 0)}`),
+        el("div", { class: "mut" }, `Full order ID: ${o.id || "?"}`),
+        el("div", {}, `Reason: ${c.reason} · opened ${when(c.created_at)} · status: ${c.status}`),
+        el("div", { class: "mut" }, `Buyer's note: ${c.note || "(none)"}`),
+        (c.photo_urls || []).length
+          ? el("div", { class: "row" }, el("span", { class: "mut" }, "Buyer's photos:"), ...c.photo_urls.map((u) => el("a", { href: u, target: "_blank", rel: "noopener" }, el("img", { src: u, style: "height:90px;margin-right:6px;border-radius:6px;border:1px solid #444" }))))
+          : el("div", { class: "mut" }, c.reason === "not_delivered" ? "No photo (the parcel never arrived)." : "No photo."),
+        el("div", { class: "mut" }, `Carrier: ${o.carrier || "?"} · tracking: ${o.tracking_number || "?"} · `, link(c.proof_url, "shipping proof photo")),
+        (c.messages || []).length ? el("div", { class: "mut" }, el("b", {}, "Order messages:"), ...c.messages.map((m) => el("div", { dir: "auto" }, `${m.who}: ${m.body}`))) : el("div", { class: "mut" }, "No messages between buyer and seller."),
+        c.status === "refunded" || c.status === "rejected"
+          ? el("div", { class: "row" }, el("b", {}, c.status === "refunded" ? "Final: the buyer was refunded." : "Final: the claim was rejected (or the time to return the item ran out)."))
+          : c.status === "approved"
+          ? el("div", { class: "row" },
+              c.return_tracking
+                ? [el("div", {}, el("b", {}, `Return shipped ${when(c.return_at)}: ${c.return_carrier} · ${c.return_tracking}`), " (check it on the courier's tracking page first)"),
+                   isOwner ? el("button", { class: "primary", onclick: () => confirm(`Fallback only: normally the SELLER presses "I received the returned item" and the refund is automatic. REFUND ${sar(o.total_halalas || 0)} to the buyer now?`) && act("refund", { action: "return_refund", claim_id: c.id }, "Refunded") }, "Refund now (fallback)") : el("span", { class: "mut" }, "The seller confirms the return; the owner can refund if the seller does not.")]
+                : el("div", { class: "mut" }, `Approved ${when(c.approved_at)}. Waiting for the buyer to send the item back (7 days, then the claim closes and the seller is paid).`))
+          : el("div", { class: "row" },
+              el("button", { class: "primary", onclick: () => confirm("Approve this claim? The buyer must send the item back first. No money moves yet.") && act("refund", { action: "claim", claim_id: c.id, approve: true }, "Approved: waiting for the return") }, "Approve (buyer returns the item)"),
+              el("button", { class: "danger", onclick: () => confirm("Reject this claim? The seller will be paid.") && act("refund", { action: "claim", claim_id: c.id, approve: false }, "Rejected") }, "Reject"))));
+    }
+    v.append(el("div", { class: "row" }, el("button", { onclick: () => act("refund", { action: "run" }, "Refund queue processed") }, "Process waiting refunds")));
+  },
+
+  async Reports(v) {
+    const { reports } = await call("admin", { action: "reports" });
+    v.append(el("p", { class: "mut" }, "Reports from users. Reply to serious ones within 24 hours (Apple expects fast action on abusive content)."));
+    if (!reports.length) v.append(el("p", {}, "No open reports."));
+    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a video comment", product: "a product", vehicle: "a vehicle listing", property: "a property listing", property_message: "a property chat message", vehicle_message: "a vehicle chat message" };
+    for (const r of reports) {
+      const who = `${r.seller_name} (@${r.seller_username})`;
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${r.reason} · reported ${label[r.target_type] || r.target_type}: ${who}`),
+        el("div", { class: "mut" }, `"${r.snapshot}"`),
+        r.target_type === "product" && r.product_photo ? el("img", { src: r.product_photo, style: "width:120px;height:120px;object-fit:cover;border-radius:8px;display:block;margin:8px 0" }) : null,
+        r.target_type === "product" && r.product_removed ? el("div", { class: "bad" }, "This product is already removed or gone.") : null,
+        r.target_type === "vehicle" && r.vehicle_photo ? el("img", { src: r.vehicle_photo, style: "width:120px;height:120px;object-fit:cover;border-radius:8px;display:block;margin:8px 0" }) : null,
+        r.target_type === "vehicle" && !r.vehicle_live ? el("div", { class: "bad" }, `This listing is not live (${r.vehicle_status}).`) : null,
+        r.target_type === "video" ? (r.video_url ? el("video", { src: r.video_url, controls: "", playsinline: "", preload: "metadata", style: "max-width:260px;max-height:360px;display:block;margin:8px 0" }) : el("div", { class: "mut" }, "The video was already removed.")) : null,
+        r.note ? el("div", {}, `Reporter's note: ${r.note}`) : null,
+        el("div", { class: "mut" }, `By @${r.reporter_username} · ${when(r.created_at)} · ${r.open_against_seller} open report(s) against this person`),
+        el("div", {}, `The reported person is ${r.role}.` + (r.is_seller ? " They also have a seller account" + (r.seller_suspended ? " (suspended)." : ".") : " They have no seller account.")),
+        el("div", { class: "row" },
+          ["message", "order_message", "vehicle_message"].includes(r.target_type) ? el("button", { onclick: () => confirm("Delete this message?") && act("admin", { action: "review_report", id: r.id, report_action: "delete_message" }, "Message deleted") }, "Delete message") : null,
+          r.target_type === "review" ? el("button", { class: "danger", onclick: () => confirm("Remove this review for good?") && act("admin", { action: "review_report", id: r.id, report_action: "remove_review" }, "Review removed") }, "Remove review") : null,
+          r.target_type === "comment" ? el("button", { class: "danger", onclick: () => confirm("Remove this comment for good?") && act("admin", { action: "review_report", id: r.id, report_action: "remove_comment" }, "Comment removed") }, "Remove comment") : null,
+          r.target_type === "video" && r.video_url ? el("button", { class: "danger", onclick: () => confirm("Remove this video for good? The seller can post a new one.") && act("admin", { action: "review_report", id: r.id, report_action: "remove_video" }, "Video removed") }, "Remove video") : null,
+          ...(r.target_type === "product" && !r.product_removed ? (() => {
+            const reasonsP = { prohibited_item: "Medicine or drugs", illegal: "Illegal item", weapons: "Weapons", counterfeit: "Counterfeit or fake", offensive: "Offensive content", other: "Other rule break" };
+            const sel = el("select", {}, ...Object.entries(reasonsP).map(([k, t]) => el("option", { value: k }, t)));
+            const strike = el("input", { type: "checkbox", checked: "" });
+            return [sel, el("label", {}, strike, " strike"),
+              el("button", { class: "danger", onclick: () => confirm(`Remove this product (${reasonsP[sel.value]})${strike.checked ? " and give the seller a strike" : ""}? Paid orders that are not shipped yet are refunded.`) && removeProductFlow({ report_id: r.id, reason: sel.value, strike: strike.checked }) }, "Remove product")];
+          })() : []),
+          r.target_type === "property" ? el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The listing fee is kept."); if (!why || !why.trim()) return; act("admin", { action: "review_report", id: r.id, report_action: "remove_property", reason: why.trim() }, "Property listing taken down"); } }, "Take the property listing down") : null,
+          r.target_type === "vehicle" && r.vehicle_live ? el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The listing fee is kept."); if (!why || !why.trim()) return; const strike = confirm("Also give the seller a strike?"); act("admin", { action: "review_report", id: r.id, report_action: "remove_vehicle", reason: why.trim(), strike }, "Listing taken down"); } }, "Take down listing") : null,
+          r.is_seller && !r.seller_suspended ? el("button", { class: "danger", onclick: () => confirm(`Suspend the SELLING of ${who}? They cannot sell or go live (their live ends now). They can still buy and chat. Undo in the Sellers tab.`) && act("admin", { action: "review_report", id: r.id, report_action: "suspend" }, "Selling suspended") }, "Suspend selling") : null,
+          el("button", { class: "danger", onclick: async () => { if (!confirm(`BAN the account of ${who}? They cannot sign in at all until you unban them (below). Their orders and data stay.`)) return;
+            await act("admin", { action: "ban_user", user_id: r.seller_id, banned: true }, "Account banned"); await act("admin", { action: "review_report", id: r.id, report_action: "actioned" }, "Account banned and report closed"); } }, "Ban account"),
+          el("button", { onclick: () => act("admin", { action: "review_report", id: r.id, report_action: "actioned" }, "Marked as handled") }, "Mark handled"),
+          el("button", { onclick: () => act("admin", { action: "review_report", id: r.id, report_action: "dismiss" }, "Dismissed") }, "Dismiss"))));
+    }
+  },
+
+  async Banned(v) {
+    const { banned } = await call("admin", { action: "banned_users" });
+    v.append(el("h3", {}, "Banned accounts"), el("p", { class: "mut" }, "These people cannot sign in. A phone that was already signed in can keep working for up to about an hour."));
+    if (!banned.length) v.append(el("p", { class: "mut" }, "Nobody is banned."));
+    for (const u of banned) v.append(el("div", { class: "card" }, el("b", {}, `${u.name} (@${u.username})`), el("div", { class: "mut" }, u.email || ""),
+      el("div", { class: "row" }, el("button", { onclick: () => confirm(`Unban ${u.name}?`) && act("admin", { action: "ban_user", user_id: u.user_id, banned: false }, "Account unbanned") }, "Unban"))));
+  },
+
+  async Words(v) {
+    const { words } = await call("admin", { action: "words" });
+    const input = el("input", { placeholder: "Word or short phrase", size: 24 });
+    const mode = el("select", {}, el("option", { value: "word" }, "Whole word only"), el("option", { value: "contains" }, "Anywhere inside a word"));
+    v.append(
+      el("p", { class: "mut" }, "These words are blocked in chat, live titles, product titles and descriptions, names, bios and usernames. Case, Arabic letter variants, dots between letters and simple number swaps (sh1t) are ignored. Use \"Anywhere inside a word\" for Arabic words that take prefixes; it can also block innocent words, so use it sparingly."),
+      el("div", { class: "card" }, el("div", { class: "row" }, input, mode,
+        el("button", { class: "primary", onclick: () => input.value.trim() && act("admin", { action: "add_word", word: input.value, mode: mode.value }, "Word added") }, "Add"))),
+      el("p", { class: "mut" }, `${words.length} words`));
+    const t = el("table", {}, el("tr", {}, ...["Word", "Matches", ""].map((h) => el("th", {}, h))));
+    for (const w of words) t.append(el("tr", {}, el("td", { dir: "auto" }, w.word), el("td", { class: "mut" }, w.mode === "contains" ? "anywhere" : "whole word"),
+      el("td", {}, el("button", { class: "danger", onclick: () => act("admin", { action: "remove_word", word: w.word }, "Word removed") }, "Remove"))));
+    v.append(t);
+  },
+
+  async Badges(v) {
+    const { verifications } = await call("admin", { action: "verifications" });
+    if (!verifications.length) v.append(el("p", { class: "mut" }, "No pending requests."));
+    for (const r of verifications) {
+      const company = el("input", { placeholder: "Company name (business only)", size: 30 });
+      const who = r.profiles ? `@${r.profiles.username} (${r.profiles.display_name})` : "?";
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${who} wants: ${r.kind}`), el("div", { class: "mut" }, `Note: ${r.note || "(none)"} · ${when(r.created_at)}`),
+        el("div", { class: "row" }, r.kind === "business" ? company : null,
+          el("button", { class: "primary", onclick: () => act("admin", { action: "review_verification", id: r.id, approve: true, company_name: company.value }, "Badge granted") }, "Approve"),
+          el("button", { class: "danger", onclick: () => act("admin", { action: "review_verification", id: r.id, approve: false }, "Rejected") }, "Reject"))));
+    }
+  },
+
+  async Sellers(v) {
+    const { sellers } = await call("admin", { action: "sellers" });
+    if (isOwner) {
+      const { auto } = await call("admin", { action: "seller_setting" });
+      v.append(el("div", { class: "card" }, el("b", {}, "Approve new sellers automatically: " + (auto ? "ON" : "OFF")),
+        el("div", { class: "mut" }, "ON = a new seller's IBAN is marked verified at once, with no check of the IBAN proof. Payouts then go to the IBAN they typed. OFF = a helper checks the proof first (recommended for real money)."),
+        el("button", { class: auto ? "danger" : "primary", onclick: () => confirm(auto ? "Switch OFF automatic approval?" : "Switch ON automatic approval of new sellers?") && act("admin", { action: "seller_setting", on: !auto }, "Saved") }, auto ? "Switch OFF" : "Switch ON")));
+    }
+    for (const s of sellers) {
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${s.full_name} (@${s.username}) · ${s.kind}`),
+        el("div", {}, `IBAN: ${s.iban}`), s.cr_number ? el("div", { class: "mut" }, `CR: ${s.cr_number}`) : null,
+        el("div", { class: s.iban_verified ? "ok" : "bad" }, s.iban_verified ? "IBAN verified" : "IBAN NOT verified", s.suspended ? " · SUSPENDED" : ""),
+        el("div", { class: "row" }, link(s.proof_url, "IBAN proof photo"),
+          el("button", { class: s.suspended ? "" : "danger", onclick: () => confirm(s.suspended ? `Allow ${s.full_name} to sell again?` : `Suspend ${s.full_name}? Their live ends now and they cannot sell.`) && act("admin", { action: "set_suspended", user_id: s.user_id, suspended: !s.suspended }, s.suspended ? "Seller un-suspended" : "Seller suspended") }, s.suspended ? "Un-suspend" : "Suspend"),
+          s.iban_verified
+            ? el("button", { class: "danger", onclick: () => act("admin", { action: "verify_iban", user_id: s.user_id, verified: false }, "Verification removed") }, "Remove verification")
+            : el("button", { class: "primary", onclick: () => confirm(`Does the proof show IBAN ${s.iban} in the name ${s.full_name}?`) && act("admin", { action: "verify_iban", user_id: s.user_id, verified: true }, "IBAN verified") }, "Verify IBAN"))));
+    }
+    if (!sellers.length) v.append(el("p", { class: "mut" }, "No sellers yet."));
+  },
+
+  async Money(v) {
+    const m = await call("admin", { action: "money" });
+    const card = (title, value, help, cls = "") => el("div", { class: "card" }, el("div", { class: "mut" }, title), el("b", { class: cls, style: "font-size:20px" }, value), el("div", { class: "mut" }, help));
+    const cf = await call("admin", { action: "coffee" });
+    v.append(el("h3", {}, "Support Casho button"), el("div", { class: "card" },
+      el("b", {}, `"Buy us a coffee" button in the Profile page: ${cf.enabled ? "ON" : "OFF"}`),
+      el("div", { class: "mut" }, `Voluntary gifts by card (SAR 5 to 500). No refunds. Given so far: ${cf.count} gift(s), ${sar(cf.total_halalas)}. Keep it OFF until you are sure about Apple's rules on tips (App Review may require Apple's own in-app purchase for gifts to the developer).`),
+      el("div", { class: "row" }, el("button", { class: cf.enabled ? "danger" : "primary", onclick: () => confirm(cf.enabled ? "Switch the Support Casho button OFF?" : "Switch the Support Casho button ON for everyone?") && act("admin", { action: "coffee", on: !cf.enabled }, "Saved") }, cf.enabled ? "Switch OFF" : "Switch ON"))));
+    v.append(
+      el("h3", {}, "Your profit"),
+      card("Commission earned (completed orders)", sar(m.commission_earned), "The 15% you keep. Counted only when the claim window is over and the sale is final.", "ok"),
+      card("Estimated Moyasar fees (worst case)", sar(m.est_fees), "About 2.5% + 1 SAR per payment. The real fees are in your Moyasar dashboard."),
+      card("Estimated profit", sar(m.commission_earned - m.est_fees), "Commission minus the fee estimate. Before your other costs (AWS, Supabase, etc).", "ok"),
+      card("Coming later (orders still in progress)", sar(m.commission_pending), "Commission on orders not final yet. Could still be refunded."),
+      el("h3", {}, "Seller money"),
+      card("Owed to sellers, ready to pay NOW", sar(m.owed_ready), "Transfer this from your bank. Details are in the Payouts tab.", m.owed_ready ? "bad" : ""),
+      card("Owed but blocked (seller IBAN not verified)", sar(m.owed_blocked), "Verify the seller's IBAN in the Sellers tab to release it."),
+      card("Already paid to sellers", sar(m.paid_out), "Orders you marked as paid."),
+      el("h3", {}, "Customer money"),
+      card("Collected from buyers (all time)", sar(m.collected), "Everything buyers paid through Moyasar, including refunded orders."),
+      card("Refunded to buyers", sar(m.refunded), m.refund_waiting ? `Plus ${sar(m.refund_waiting)} waiting to be refunded (Claims tab, Process waiting refunds).` : "Nothing waiting."),
+      card("Held for orders in progress", sar(m.held_in_progress), "Paid but not final yet: waiting to ship, in delivery, or inside the claim window. Not yours and not the seller's yet."));
+  },
+
+  async Suggestions(v) {
+    const sel = el("select", {}, el("option", { value: "new" }, "New"), el("option", { value: "read" }, "Read"), el("option", { value: "done" }, "Done"), el("option", { value: "" }, "All"));
+    sel.value = window.suggestionFilter ?? "new";
+    sel.onchange = () => { window.suggestionFilter = sel.value; show("Suggestions"); };
+    const { suggestions } = await call("admin", { action: "suggestions", status: sel.value || undefined });
+    v.append(el("div", { class: "row" }, sel, el("span", { class: "mut" }, `${suggestions.length} shown (latest 200)`)));
+    if (!suggestions.length) v.append(el("p", { class: "mut" }, "Nothing here."));
+    const kinds = { idea: "Idea", problem: "Problem", other: "Other" };
+    for (const s of suggestions) {
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${kinds[s.kind] || s.kind} · ${s.status}`),
+        el("div", { class: "mut" }, `${when(s.created_at)} · ${s.name || "?"} (@${s.username || "?"})`),
+        el("div", { dir: "auto", style: "white-space:pre-wrap;margin:6px 0" }, s.body),
+        el("div", { class: "row" },
+          s.status !== "read" ? el("button", { onclick: () => act("admin", { action: "suggestion_status", id: s.id, status: "read" }, "Marked as read") }, "Mark read") : null,
+          s.status !== "done" ? el("button", { class: "primary", onclick: () => act("admin", { action: "suggestion_status", id: s.id, status: "done" }, "Marked as done") }, "Done") : null,
+          el("button", { class: "danger", onclick: () => confirm("Delete this suggestion for good?") && act("admin", { action: "delete_suggestion", id: s.id }, "Deleted") }, "Delete"))));
+    }
+  },
+
+  async Products(v) {
+    const find = el("input", { placeholder: "Find a product: title, @seller, or product number (#A1B2C3D4)", size: "36", value: window.productQuery || "" });
+    const go = el("button", { onclick: () => { window.productQuery = find.value.trim(); show("Products"); } }, "Find");
+    find.addEventListener("keydown", (e) => { if (e.key === "Enter") go.click(); });
+    v.append(el("div", { class: "row" }, find, go));
+    v.append(el("p", { class: "mut" }, "Remove a bad product (medicine, drugs, illegal or fake items ...). The product goes off the Shop and lists, its video is hidden, a running auction is cancelled and card holds are released, and the seller gets an email with the reason. The seller cannot put it back. A strike counts toward the same 3 as auction strikes."));
+    const { products } = await call("admin", { action: "products", q: window.productQuery || "" });
+    if (!products.length) v.append(el("p", { class: "mut" }, "Nothing found."));
+    const reasons = { prohibited_item: "Medicine or drugs", illegal: "Illegal item", weapons: "Weapons", counterfeit: "Counterfeit or fake", offensive: "Offensive content", other: "Other rule break" };
+    for (const p of products) {
+      const state = p.removed_by_admin ? "REMOVED by admin: " + (reasons[p.removal_reason] || p.removal_reason) : (p.active ? (p.in_shop ? "Live in the Shop" : "Active") : "Hidden by the seller");
+      const card = el("div", { class: "card" },
+        el("div", { class: "row" }, p.photo_url ? el("img", { src: p.photo_url, style: "width:84px;height:84px;object-fit:cover;border-radius:8px" }) : null,
+          el("div", {}, el("b", {}, p.title), el("div", { class: "mut" }, `#${p.id.slice(0, 8).toUpperCase()} · ${p.seller || "?"} (@${p.username || "?"}) · ${sar(p.price_halalas)} · qty ${p.quantity}`), el("div", { class: p.removed_by_admin ? "bad" : "mut" }, state))),
+        p.description ? el("div", { dir: "auto", style: "white-space:pre-wrap;margin:6px 0" }, p.description) : null);
+      if (p.removed_by_admin) {
+        card.append(el("div", { class: "row" }, el("button", { onclick: () => confirm("Restore this product? The seller can use it again.") && act("admin", { action: "restore_product", product_id: p.id }, "Restored") }, "Restore")));
+      } else {
+        const sel = el("select", {}, ...Object.entries(reasons).map(([k, t]) => el("option", { value: k }, t)));
+        const strike = el("input", { type: "checkbox", checked: "" });
+        card.append(el("div", { class: "row" }, sel, el("label", {}, strike, " also give the seller a strike"),
+          el("button", { class: "danger", onclick: () => confirm(`Remove "${p.title}" (${reasons[sel.value]})${strike.checked ? " and give the seller a strike" : ""}? Paid orders that are not shipped yet are refunded.`) && removeProductFlow({ product_id: p.id, reason: sel.value, strike: strike.checked }) }, "Remove product")));
+      }
+      v.append(card);
+    }
+  },
+
+  async Auctions(v) {
+    const r = await call("admin", { action: "auctions_overview" });
+    v.append(el("div", { class: "card" },
+      el("b", {}, r.enabled ? "Auctions for normal items are ON" : "Auctions for normal items are OFF"),
+      el("div", { class: "mut" }, "When off, nobody can start or bid on an auction and the app hides the buttons. Running auctions keep their holds; switch off only when none are running."),
+      isOwner ? el("div", { class: "row" }, el("button", { class: r.enabled ? "danger" : "primary", onclick: () => confirm(r.enabled ? "Switch auctions OFF for everyone?" : "Switch auctions ON for everyone?") && act("admin", { action: "auctions_switch", on: !r.enabled }, r.enabled ? "Auctions are off" : "Auctions are on") }, r.enabled ? "Switch OFF" : "Switch ON")) : el("div", { class: "mut" }, "Only the owner can switch it.")));
+    v.append(el("h3", {}, `Running auctions (${r.open.length})`));
+    if (!r.open.length) v.append(el("p", { class: "mut" }, "None."));
+    for (const a of r.open) v.append(el("div", { class: "card" },
+      el("b", {}, a.title || "(product)"),
+      el("div", { class: "mut" }, `${a.seller || "?"} (@${a.username || "?"}) · ${a.status} · ${a.bid_count} bids · ${a.current_halalas == null ? "start " + sar(a.start_halalas) : "highest " + sar(a.current_halalas)} · ends ${when(a.ends_at)}`)));
+    v.append(el("h3", {}, `Sellers with strikes (${r.strikes.length})`));
+    v.append(el("p", { class: "mut" }, "A seller gets a strike for cancelling an auction after someone bid. At 3 strikes they cannot start auctions."));
+    if (!r.strikes.length) v.append(el("p", { class: "mut" }, "None."));
+    for (const x of r.strikes) v.append(el("div", { class: "card" },
+      el("b", {}, `${x.seller || "?"} (@${x.username || "?"}): ${x.strikes} strike${x.strikes === 1 ? "" : "s"}`),
+      el("div", { class: "row" }, el("button", { class: "primary", onclick: () => confirm(`Clear all strikes for ${x.seller}?`) && act("admin", { action: "clear_strikes", seller_id: x.seller_id }, "Strikes cleared") }, "Clear strikes"))));
+  },
+
+  async Vehicles(v) {
+    const r = await call("admin", { action: "vehicles", status: "all" });
+    const sw = (key, on, title, help) => el("div", { class: "card" }, el("b", {}, `${title}: ${on ? "ON" : "OFF"}`), el("div", { class: "mut" }, help),
+      isOwner ? el("div", { class: "row" }, el("button", { class: on ? "danger" : "primary", onclick: () => confirm(`${on ? "Switch OFF" : "Switch ON"}: ${title}?`) && act("admin", { action: "vehicle_setting", key, on: !on }, "Saved") }, on ? "Switch OFF" : "Switch ON")) : el("div", { class: "mut" }, "Only the owner can switch it."));
+    v.append(sw("vehicles_enabled", r.enabled, "Vehicle and big-item listings (selling)", "Fixed price or no price. When off, the app hides vehicles and nobody can list."));
+    v.append(sw("auctions_vehicles_enabled", r.auctions, "Vehicle AUCTIONS (needs permits)", "Keep OFF until the permits for auctioning cars are clear. Sellers then only see fixed price and no price."));
+    v.append(sw("vehicle_auto_approve", r.auto, "Auto-approve listings", "ON: a paid listing goes live at once. OFF: a helper approves each one below. You can always take a live listing down."));
+    if (isOwner) {   // deposit auctions: deals that need a decision and deposits owed to sellers (owner only)
+      const dl = await call("admin", { action: "vehicle_deals" });
+      v.append(el("h3", {}, `Vehicle deals in progress (${dl.deals.length})`));
+      if (!dl.deals.length) v.append(el("p", { class: "mut" }, "None."));
+      for (const d of dl.deals) v.append(el("div", { class: "card" },
+        el("b", {}, `${d.title} · ${d.status.toUpperCase()}`),
+        el("div", { class: "mut" }, `Seller ${d.seller} · winner ${d.winner || "?"} · bid ${sar(d.current_halalas || 0)} · deposit ${sar(d.deposit_halalas || 0)} · deadline ${d.deal_deadline ? when(d.deal_deadline) : "-"} · seller ${d.seller_done_at ? "pressed Done" : "not yet"} · buyer ${d.buyer_done_at ? "pressed Done" : "not yet"}`),
+        d.status === "closing" ? null : el("div", { class: "mut" }, "Decide only when someone asks or the deal is in dispute. Read the chat or ask both people first."),
+        d.status === "closing" ? null : el("div", { class: "row" },
+          el("button", { class: "danger", onclick: () => confirm(`Buyer at fault? The seller is owed the deposit (minus Casho's share) and the buyer gets a strike.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "buyer_fault" }, "Done: seller owed, buyer strike") }, "Buyer at fault"),
+          el("button", { class: "danger", onclick: () => confirm(`Seller at fault? The deposit is refunded to the buyer and the seller gets a strike.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "seller_fault" }, "Done: deposit refunded, seller strike") }, "Seller at fault"),
+          el("button", { onclick: () => confirm(`No one at fault? The deposit is refunded to the buyer, no strikes.`) && act("admin", { action: "vehicle_resolve", id: d.id, outcome: "no_fault" }, "Done: deposit refunded") }, "No fault: refund buyer"))));
+      v.append(el("h3", {}, `Deposits owed to sellers (${dl.owed.length})`));
+      if (!dl.owed.length) v.append(el("p", { class: "mut" }, "None."));
+      for (const o of dl.owed) v.append(el("div", { class: "card" },
+        el("b", {}, `${sar(o.payout_halalas)} to ${o.full_name || o.seller}`),
+        el("div", { class: "mut" }, `${o.title} · ${o.closed_reason} · IBAN ${o.iban || "?"}${o.iban_verified ? "" : " (NOT VERIFIED: verify it in the Sellers tab first)"}`),
+        el("div", { class: "row" }, el("button", { class: "primary", onclick: () => confirm(`Have you transferred ${sar(o.payout_halalas)} to ${o.full_name}?`) && act("admin", { action: "vehicle_paid", id: o.id }, "Marked as paid") }, "Mark paid"))));
+    }
+    const wait = r.vehicles.filter((x) => x.status === "pending_review"), rest = r.vehicles.filter((x) => x.status !== "pending_review");
+    v.append(el("h3", {}, `Waiting for approval (${wait.length})`));
+    if (!wait.length) v.append(el("p", { class: "mut" }, "None."));
+    for (const x of wait) {
+      const imgs = el("div", { class: "row" }, ...x.photo_urls.map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:90px;border-radius:6px" }))));
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${x.title} · ${x.kind}`),
+        el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.sale_type}${x.price_halalas ? " · " + sar(x.price_halalas) : ""}${x.deposit_halalas ? " · deposit " + sar(x.deposit_halalas) : ""} · fee paid ${sar(x.fee_halalas)}`),
+        el("div", {}, [x.brand, x.model, x.year, x.km != null ? x.km + " km" : null, x.condition].filter((y) => y != null && y !== "").join(" · ")),
+        el("div", {}, x.description || ""), imgs, x.video_url ? el("a", { href: x.video_url, target: "_blank" }, "Watch the video") : null,
+        el("div", { class: "mut" }, "Check: real vehicle photos, a sensible title and price, no banned items, nothing that looks stolen or fake. Approve only if it is OK."),
+        el("div", { class: "row" },
+          el("button", { class: "primary", onclick: () => confirm(`Approve "${x.title}"? It goes live now.`) && act("admin", { action: "review_vehicle", id: x.id, approve: true }, "Approved") }, "Approve"),
+          el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is refunded."); if (why && why.trim()) act("admin", { action: "review_vehicle", id: x.id, approve: false, reason: why.trim() }, "Rejected and fee refunded"); } }, "Reject + refund fee"))));
+    }
+    v.append(el("h3", {}, `Other listings (${rest.length})`));
+    for (const x of rest) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.status}`),
+      el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.sale_type} · fee ${sar(x.fee_halalas)}${x.fee_payment_id && !x.fee_refunded_at && ["rejected", "cancelled"].includes(x.status) ? " · FEE NOT REFUNDED YET" : ""}`),
+      x.status === "live" ? el("div", { class: "row" }, ...x.photo_urls.slice(0, 3).map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:60px;border-radius:6px" }))),
+        el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "vehicle_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
+  },
+
+  async Properties(v) {
+    const r = await call("admin", { action: "properties", status: "all" }), S = r.settings || {};
+    const on = (k) => S[k] === 1;
+    if (isOwner) {
+      v.append(el("div", { class: "card" }, el("b", {}, "How properties work"),
+        el("div", {}, "Sellers list apartments, villas, land and more. There is no buying and no auction: the price is just text, buyers press I'm interested, and they chat. The seller pays a listing fee by card (" + sar(S.property_fee || 10000) + "); a helper approves each listing, and a rejection refunds the fee."),
+        el("div", { class: "mut" }, "In Saudi Arabia a real-estate advert needs the advertiser's licence number from the Real Estate General Authority (REGA). The app asks for it while the licence switch is ON. Ask the lawyer before switching the feature ON for everybody.")));
+      const sw = (title, help, key) => el("div", { class: "card" }, el("b", {}, `${title}: ${on(key) ? "ON" : "OFF"}`), el("div", { class: "mut" }, help),
+        el("button", { class: on(key) ? "danger" : "", onclick: () => act("admin", { action: "property_setting", key, on: !on(key) }, "Saved") }, on(key) ? "Turn OFF" : "Turn ON"));
+      v.append(sw("1. Properties feature", "OFF = nobody sees or lists properties (the Properties tab in the Shop is hidden).", "properties_enabled"));
+      v.append(sw("2. Approve every listing automatically", "OFF = a helper checks each paid listing first (recommended).", "property_auto_approve"));
+      v.append(sw("3. Ask for the advertising licence number", "ON = a seller cannot list without it.", "property_license_required"));
+    }
+    const wait = r.properties.filter((x) => x.status === "pending_review"), rest = r.properties.filter((x) => x.status !== "pending_review");
+    v.append(el("h3", {}, `Waiting for approval (${wait.length})`));
+    if (!wait.length) v.append(el("p", { class: "mut" }, "None."));
+    for (const x of wait) {
+      const imgs = el("div", { class: "row" }, ...x.photo_urls.map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:90px;border-radius:6px" }))));
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${x.title} · ${x.type} · ${x.purpose}`),
+        el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.city}${x.district ? ", " + x.district : ""} · ${x.area_sqm} m² · ${x.price_text || "no price text"} · fee paid ${sar(x.fee_halalas)}`),
+        el("div", {}, [x.bedrooms != null ? x.bedrooms + " bed" : null, x.bathrooms != null ? x.bathrooms + " bath" : null, x.condition, x.built_year].filter((y) => y != null && y !== "").join(" · ")),
+        el("div", {}, "Licence: " + (x.license_no || "none")),
+        el("div", {}, x.description || ""), imgs, x.video_url ? el("a", { href: x.video_url, target: "_blank" }, "Watch the video") : null,
+        el("div", { class: "mut" }, "Check: real photos of this property, a sensible title, a licence number that looks right, no phone numbers or links, nothing that looks like a scam. Approve only if it is OK."),
+        el("div", { class: "row" },
+          el("button", { class: "primary", onclick: () => confirm(`Approve "${x.title}"? It goes live now.`) && act("admin", { action: "review_property", id: x.id, approve: true }, "Approved") }, "Approve"),
+          el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is refunded."); if (why && why.trim()) act("admin", { action: "review_property", id: x.id, approve: false, reason: why.trim() }, "Rejected and fee refunded"); } }, "Reject + refund fee"))));
+    }
+    v.append(el("h3", {}, `Other listings (${rest.length})`));
+    for (const x of rest) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.status}`),
+      el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.city} · fee ${sar(x.fee_halalas)}${["rejected", "cancelled"].includes(x.status) && !x.fee_refunded_at ? " · check the fee refund" : ""}`),
+      x.status === "live" ? el("div", { class: "row" }, ...x.photo_urls.slice(0, 3).map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:60px;border-radius:6px" }))),
+        el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "property_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
+  },
+
+  async "Email users"(v) {
+    v.append(el("div", { class: "card" }, el("b", {}, "Email your users"),
+      el("div", {}, "Marketing = news, offers, new products: it goes only to people who switched on \"Send me news and offers\" in the app, and every email has an Unsubscribe link."),
+      el("div", {}, "Important = account, orders, policy changes: it goes to everyone you choose. Do not use it for advertising."),
+      el("div", { class: "mut" }, "Emails are sent 25 per minute, so a big list takes a while. Send yourself a test first.")));
+    const kind = el("select", {}, el("option", { value: "marketing" }, "Marketing (only people who agreed)"), el("option", { value: "important" }, "Important (everyone chosen)"));
+    const aud = el("select", {}, el("option", { value: "all" }, "Everyone"), el("option", { value: "sellers" }, "Sellers only"), el("option", { value: "buyers" }, "Buyers only"));
+    const sen = el("input", { size: 50, placeholder: "Subject in English" }), sar_ = el("input", { size: 50, placeholder: "الموضوع بالعربية (اختياري)", dir: "rtl" });
+    const ben = el("textarea", { rows: 6, cols: 60, placeholder: "Message in English" }), bar_ = el("textarea", { rows: 6, cols: 60, placeholder: "الرسالة بالعربية (اختياري)", dir: "rtl" });
+    const to = el("input", { size: 30, placeholder: "your email for the test" });
+    const count = el("span", { class: "mut" }, "");
+    const refresh = async () => { try { const r = await call("admin", { action: "broadcast_count", audience: aud.value, kind: kind.value }); count.textContent = `This reaches ${r.count} people.`; } catch (e) { count.textContent = e.message; } };
+    kind.onchange = refresh; aud.onchange = refresh; refresh();
+    const body = () => ({ subject_en: sen.value, subject_ar: sar_.value, body_en: ben.value, body_ar: bar_.value, audience: aud.value, kind: kind.value });
+    v.append(el("div", { class: "card" }, el("div", { class: "row" }, kind, aud, count), el("div", {}, sen), el("div", {}, sar_), el("div", {}, ben), el("div", {}, bar_),
+      el("div", { class: "row" }, to, el("button", { onclick: () => act("admin", { action: "broadcast_test", ...body(), to: to.value }, "Test email sent") }, "Send a test to me")),
+      el("div", { class: "row" }, el("button", { class: "danger", onclick: async () => {
+        const r = await call("admin", { action: "broadcast_count", audience: aud.value, kind: kind.value });
+        if (confirm(`Send this ${kind.value} email to ${r.count} people? This cannot be undone.`)) act("admin", { action: "broadcast_create", ...body() }, "Queued: it is being sent");
+      } }, "Send to everyone chosen"))));
+    const r = await call("admin", { action: "broadcast_list" });
+    v.append(el("h3", {}, `Sent emails (${r.broadcasts.length})`));
+    for (const x of r.broadcasts) v.append(el("div", { class: "card" }, el("b", {}, x.subject_en),
+      el("div", { class: "mut" }, `${x.kind} · ${x.audience} · ${new Date(x.created_at).toLocaleString()} · by ${x.created_by || ""}`),
+      el("div", {}, `${x.sent} sent of ${x.total} · ${x.pending} waiting · ${x.failed} failed · ${x.skipped} had no email`)));
+  },
+
+  async Ads(v) {
+    const r = await call("admin", { action: "ads_list" }), S = r.settings, on = S.ads_enabled === 1;
+    v.append(el("div", { class: "card" }, el("b", {}, "How ads work"),
+      el("div", {}, "An ad is a short video (best under 30 seconds, MP4) shown between videos in the For You feed with a small \"Ad\" label. It can lead to a product, a seller, or a web page."),
+      el("div", {}, "You approve every ad because you upload it. Keep the switch OFF until you are ready.")));
+    v.append(el("div", { class: "card" }, el("b", {}, "Show ads in the app: " + (on ? "ON" : "OFF")),
+      el("button", { class: on ? "danger" : "", onclick: () => act("admin", { action: "ads_list", enabled: !on }, "Saved") }, on ? "Turn OFF" : "Turn ON")));
+    const every = el("input", { size: 4, inputmode: "numeric", value: String(S.ads_every || 7) });
+    v.append(el("div", { class: "card" }, el("b", {}, "One ad about every N videos"), el("div", { class: "row" }, every, el("button", { onclick: () => act("admin", { action: "ads_list", every: Number(every.value) }, "Saved") }, "Save (3 to 30)"))));
+    const title = el("input", { size: 30, placeholder: "Title (shown on the ad)" }), file = el("input", { type: "file", accept: "video/mp4,video/quicktime" });
+    const type = el("select", {}, el("option", { value: "none" }, "Leads nowhere"), el("option", { value: "product" }, "A product (paste its id)"), el("option", { value: "seller" }, "A seller (paste the seller id)"), el("option", { value: "url" }, "A web page (https://...)"));
+    const target = el("input", { size: 40, placeholder: "id or https:// address" }), days = el("input", { size: 3, value: "14", inputmode: "numeric" });
+    v.append(el("div", { class: "card" }, el("b", {}, "Add an ad"), el("div", {}, title), el("div", {}, file), el("div", { class: "row" }, type, target), el("div", { class: "row" }, "Days to show (0 = no end):", days,
+      el("button", { onclick: async () => {
+        try {
+          const f = file.files[0]; if (!f) throw new Error("Choose a video file");
+          say("Uploading the video…", "ok");
+          const up = await call("admin", { action: "ad_upload_url" });
+          const fd = new FormData(); fd.append("cacheControl", "3600"); fd.append("", f);
+          const res = await fetch(up.url, { method: "PUT", body: fd });
+          if (!res.ok) throw new Error("The upload failed (" + res.status + "). Try a smaller MP4.");
+          const t = target.value.trim();
+          await call("admin", { action: "ad_create", title: title.value, video_path: up.path, target_type: type.value, target_id: type.value === "product" || type.value === "seller" ? t : null, target_url: type.value === "url" ? t : null, days: Number(days.value) });
+          say("Ad added", "ok"); await show(tab);
+        } catch (e) { say(e.message, "bad"); }
+      } }, "Upload and add"))));
+    v.append(el("h3", {}, `Ads (${r.ads.length})`));
+    for (const x of r.ads) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.status}`),
+      el("div", { class: "mut" }, `${x.target_type}${x.target_url ? " " + x.target_url : ""} · ${x.ends_at ? "until " + new Date(x.ends_at).toLocaleDateString() : "no end"}`),
+      el("div", {}, `Shown ${x.views} times · tapped ${x.taps} times`),
+      el("div", { class: "row" },
+        el("button", { onclick: () => act("admin", { action: "ad_status", id: x.id, status: x.status === "active" ? "paused" : "active" }, "Saved") }, x.status === "active" ? "Pause" : "Resume"),
+        el("button", { class: "danger", onclick: () => { if (confirm("Delete this ad?")) act("admin", { action: "ad_delete", id: x.id }, "Deleted"); } }, "Delete"))));
+  },
+
+  async Promotions(v) {
+    const r = await call("admin", { action: "promo_list" }), S = r.settings;
+    const on = (k) => S[k] === 1;
+    v.append(el("div", { class: "card" }, el("b", {}, "How promotions work"),
+      el("div", {}, "A promoted product shows its video in other people's For You feed (about every 5th slot) with a small \"Promoted\" label, for the days you choose. Views and taps are counted so you can show the seller the result."),
+      el("div", {}, "Switch 1 shows promoted items in the app at all. Switch 2 lets sellers buy a promotion themselves by card in the app. Keep both OFF until everything is tested and the lawyer is happy."),
+      el("div", { class: "mut" }, "You can always create one by hand below (for example a seller paid you by bank transfer). Nothing shows in the app while switch 1 is OFF.")));
+    const sw = (title, help, key, field) => el("div", { class: "card" }, el("b", {}, `${title}: ${on(key) ? "ON" : "OFF"}`), el("div", { class: "mut" }, help),
+      el("button", { class: on(key) ? "danger" : "", onclick: () => act("admin", { action: "promo_list", [field]: !on(key) }, "Saved") }, on(key) ? "Turn OFF" : "Turn ON"));
+    v.append(sw("1. Show promoted items in the feed", "OFF = nobody sees any promotion, even ones you created.", "promotions_enabled", "enabled"));
+    v.append(sw("2. Sellers can buy promotions in the app", "OFF = no Promote button for sellers. Needs switch 1 ON too.", "promo_selfserve_enabled", "selfserve"));
+    const price = el("input", { size: 8, inputmode: "numeric", placeholder: String((S.promo_price_per_day_halalas || 2000) / 100) });
+    v.append(el("div", { class: "card" }, el("b", {}, `Price per day for sellers: ${sar(S.promo_price_per_day_halalas || 2000)} (longest ${S.promo_max_days || 14} days)`),
+      el("div", { class: "row" }, price, el("button", { onclick: () => act("admin", { action: "promo_list", price_halalas: Math.round(Number(price.value) * 100) }, "Saved") }, "Change the price (SAR)"))));
+    const pid = el("input", { size: 40, placeholder: "product id (long code)" }), days = el("input", { size: 4, value: "3", inputmode: "numeric" }), note = el("input", { size: 30, placeholder: "note for you (optional)" });
+    v.append(el("div", { class: "card" }, el("b", {}, "Create a promotion by hand"),
+      el("div", { class: "mut" }, 'The product id is shown as "Product #A1B2C3D4" in the app. Paste the full id from the Products tab. The product must be in the shop with a video.'),
+      el("div", { class: "row" }, pid, days, note, el("button", { onclick: () => act("admin", { action: "promo_create", product_id: pid.value.trim(), days: Number(days.value), note: note.value }, "Promotion started") }, "Start now"))));
+    v.append(el("h3", {}, `Promotions (${r.promotions.length})`));
+    for (const x of r.promotions) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.seller_name} · ${x.status}`),
+      el("div", { class: "mut" }, `${x.source === "seller" ? "bought in the app" : "made by you"} · ${x.days} days${x.price_halalas ? " · " + sar(x.price_halalas) : ""} · ${x.starts_at ? new Date(x.starts_at).toLocaleDateString() + " to " + new Date(x.ends_at).toLocaleDateString() : ""}${x.note ? " · " + x.note : ""}`),
+      el("div", {}, `Shown ${x.impressions} times · tapped ${x.taps} times`),
+      x.status === "active" ? el("button", { class: "danger", onclick: () => { const why = prompt("Reason (only for your records)"); if (why !== null) act("admin", { action: "promo_cancel", id: x.promo_id, reason: why }, "Cancelled"); } }, "Cancel") : null));
+  },
+
+  async Referrals(v) {
+    const r = await call("admin", { action: "referral_list" });
+    const S = r.settings, pct = (bps) => (bps / 100) + "%";
+    const maxS = S.referral_max_orders === undefined ? 1 : S.referral_max_orders;
+    v.append(el("div", { class: "card" }, el("b", {}, "How referral codes work"),
+      el("div", {}, "1. You create a code for an influencer (for example SARA20) and send them the link. They share it with their followers."),
+      el("div", {}, `2. A buyer types the code at checkout and gets ${sar(S.referral_discount_halalas || 2000)} off (items from ${sar(S.referral_min_item_halalas || 10000)}). Casho pays the discount, the seller is paid as usual. By default each person can use a code ${maxS === 0 ? "on EVERY order" : maxS === 1 ? "ONCE (any order, new or old customer)" : maxS + " times"}. A code can also have a total limit (for example 500 uses) and an end date.`),
+      el("div", {}, `3. The buyer is then tied to that influencer for ${S.referral_days || 90} days. The influencer earns ${pct(S.referral_share_bps || 3000)} of Casho's commission on every COMPLETED order of that buyer in that time, whether or not the discount was used. Refunded orders earn nothing.`),
+      el("div", {}, '4. When money is owed, you transfer it to the influencer yourself, then press "Mark paid" on their card.'),
+      el("div", { class: "mut" }, "Default numbers are in app_settings (referral_discount_halalas, referral_share_bps, referral_days, referral_min_item_halalas, referral_max_orders). Each code can override them below.")));
+    const lab = (title, help, input) => el("div", { style: "margin:6px 0" }, el("b", {}, title), el("div", { class: "mut" }, help), input);
+    const code = el("input", { placeholder: "SARA20", size: 14, maxlength: 20 }), who = el("input", { placeholder: "Sara Ahmed", size: 24 });
+    const disc = el("input", { placeholder: `empty = ${(S.referral_discount_halalas || 2000) / 100}`, size: 10, inputmode: "numeric" }), share = el("input", { placeholder: `empty = ${(S.referral_share_bps || 3000) / 100}`, size: 10, inputmode: "numeric" });
+    const mx = el("input", { placeholder: `empty = ${maxS}`, size: 10, inputmode: "numeric" });
+    const tot = el("input", { placeholder: "empty = no limit", size: 14, inputmode: "numeric" }), until = el("input", { type: "date" });
+    v.append(el("div", { class: "card" }, el("b", {}, "Create a new code"),
+      lab("Code", "What the buyer types: 3 to 20 letters or numbers, no spaces. Short and easy, like SARA20.", code),
+      lab("Influencer name", "Only for you, to know who gets paid. The buyer never sees it.", who),
+      lab("Discount for the buyer in SAR (optional)", `Leave empty for the default (${sar(S.referral_discount_halalas || 2000)}).`, disc),
+      lab("Influencer share in % (optional)", `Their percentage of Casho's commission. Leave empty for the default (${pct(S.referral_share_bps || 3000)}).`, share),
+      lab("Orders per buyer that get the discount (optional)", "1 = each person can use the code once (on any order, new or old customers). 0 = every order. 3 = three orders. Leave empty for the default.", mx),
+      lab("Total uses allowed (optional)", "The code stops working after this many discounted orders by everyone, for example 500. Leave empty for no limit.", tot),
+      lab("Valid until (optional)", "The last day the code works (Saudi time). Leave empty for no end date.", until),
+      el("div", { class: "row" }, el("button", { class: "primary", onclick: () => act("admin", { action: "referral_create", code: code.value, influencer: who.value,
+        discount_halalas: disc.value ? Math.round(Number(disc.value) * 100) : null, share_bps: share.value ? Math.round(Number(share.value) * 100) : null, max_orders: mx.value !== "" ? Math.round(Number(mx.value)) : null, max_uses: tot.value ? Math.round(Number(tot.value)) : null, expires_on: until.value || null }, "Code created") }, "Create code"))));
+    const base = "https://appcasho.com/open.html?r=";
+    for (const c of r.codes) {
+      const owed = Math.max(0, Number(c.earned_halalas) - Number(c.paid_halalas));
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${c.code} · ${c.influencer}${c.active ? "" : " (OFF)"}`),
+        el("div", { class: "mut" }, `Discount ${sar(c.discount_halalas)} (${c.max_orders === 0 ? "every order" : c.max_orders === 1 ? "once per person" : c.max_orders + " orders per person"}) · used ${c.uses}${c.max_uses ? " of " + c.max_uses : ""} time(s)${c.expires_at ? " · valid until " + new Date(c.expires_at).toLocaleDateString("en-GB") + (new Date(c.expires_at) < new Date() ? " (EXPIRED)" : "") : ""} · share ${pct(c.share_bps)} · ${c.buyers} buyer(s) joined · ${c.orders} completed order(s) · Casho commission ${sar(Number(c.commission_halalas))} · discounts given ${sar(Number(c.discount_given_halalas))}`),
+        el("div", {}, `Earned ${sar(Number(c.earned_halalas))} · paid ${sar(Number(c.paid_halalas))} · `, el("b", { class: owed ? "bad" : "" }, `OWED ${sar(owed)}`)),
+        el("div", { class: "mut" }, `Share link: ${base}${c.code}`),
+        el("div", { class: "row" },
+          el("button", { onclick: () => { navigator.clipboard.writeText(base + c.code); say("Link copied", "ok"); } }, "Copy link"),
+          owed ? el("button", { class: "primary", onclick: () => { const a = prompt(`How many SAR did you transfer to ${c.influencer}? (owed ${(owed / 100).toFixed(2)})`, (owed / 100).toFixed(2)); if (a && Number(a) > 0 && confirm(`Mark ${a} SAR as paid to ${c.influencer}?`)) act("admin", { action: "referral_paid", code: c.code, amount_halalas: Math.round(Number(a) * 100) }, "Marked as paid"); } }, "Mark paid") : null,
+          el("button", { class: c.active ? "danger" : "primary", onclick: () => act("admin", { action: "referral_toggle", code: c.code, active: !c.active }, c.active ? "Code switched off" : "Code switched on") }, c.active ? "Switch OFF" : "Switch ON"))));
+    }
+  },
+
+  async Team(v) {
+    const { helpers } = await call("admin", { action: "helpers" });
+    const { log } = await call("admin", { action: "team_log" });
+    v.append(el("p", { class: "mut" }, "Friends who help you. A friend can handle claims, reports and orders. They cannot refund money, see bank details, or change anything else. Each friend has their own password, so you can remove one without touching the others."));
+    if (window.invite) {   // shown once: the password is not stored anywhere readable
+      const text = `Casho team page\nLink: ${TEAM_URL}\nYour name: ${window.invite.name}\nYour password: ${window.invite.password}\n(The password is only for you. Do not share it.)\n\nصفحة فريق كاشو\nالرابط: ${TEAM_URL}\nالاسم: ${window.invite.name}\nكلمة المرور: ${window.invite.password}\n(كلمة المرور لك وحدك. لا تشاركها.)`;
+      const box = el("textarea", { readonly: "", rows: "9", style: "width:100%;font-size:14px" }); box.value = text;
+      v.append(el("div", { class: "card" },
+        el("b", {}, `Invitation for ${window.invite.name}: copy it now, the password is shown only once`),
+        box,
+        el("div", { class: "row" },
+          el("button", { class: "primary", onclick: async () => { try { await navigator.clipboard.writeText(text); say("Copied. Paste it in a message to your friend.", "ok"); } catch { box.select(); say("Select the text and copy it.", "mut"); } } }, "Copy the invitation"),
+          el("button", { onclick: () => { window.invite = null; show("Team"); } }, "I sent it, hide this"))));
+    }
+    const nameIn = el("input", { placeholder: "Friend's name, letters only (for example sara)", size: "34" });
+    const addBtn = el("button", { class: "primary", onclick: async () => {
+      try { const r = await call("admin", { action: "add_helper", name: nameIn.value }); window.invite = r; show("Team"); } catch (e) { say(e.message, "bad"); }
+    } }, "Add a friend");
+    nameIn.addEventListener("keydown", (e) => { if (e.key === "Enter") addBtn.click(); });
+    v.append(el("div", { class: "row" }, nameIn, addBtn));
+    if (!helpers.length) v.append(el("p", { class: "mut" }, "No friends added yet."));
+    for (const h of helpers) {
+      v.append(el("div", { class: "card" },
+        el("b", {}, h.name), el("div", { class: "mut" }, `Added ${when(h.created_at)} · last login ${h.last_login ? when(h.last_login) : "never"}`),
+        el("div", { class: "row" },
+          el("button", { onclick: async () => { if (!confirm(`Make a new password for ${h.name}? The old one stops working.`)) return; try { window.invite = await call("admin", { action: "reset_helper", name: h.name }); show("Team"); } catch (e) { say(e.message, "bad"); } } }, "New password"),
+          el("button", { class: "danger", onclick: () => confirm(`Remove ${h.name}? Their password stops working at once.`) && act("admin", { action: "remove_helper", name: h.name }, `${h.name} removed`) }, "Remove"))));
+    }
+    v.append(el("h3", {}, "What your friends did (latest 60)"));
+    if (!log.length) v.append(el("p", { class: "mut" }, "Nothing yet."));
+    else {
+      const t = el("table", {}, el("tr", {}, ...["When", "Who", "What", "Order or item"].map((h) => el("th", {}, h))));
+      for (const r of log) t.append(el("tr", {}, el("td", { class: "mut" }, when(r.at)), el("td", {}, r.who), el("td", {}, r.action), el("td", { class: "mut" }, r.target || "")));
+      v.append(t);
+    }
+  },
+
+  async Orders(v) {
+    const sel = el("select", {}, el("option", { value: "" }, "All statuses"),
+      ...["pending_payment","paid","shipped","received","completed","cancelled","expired","refund_pending","refunded","disputed"].map((s) => el("option", { value: s }, s)));
+    sel.value = window.orderFilter || "";
+    sel.onchange = () => { window.orderFilter = sel.value; show("Orders"); };
+    const find = el("input", { placeholder: "Find by order number (#A1B2C3D4 or full ID)", size: "32", value: window.orderQuery || "" });
+    const findBtn = el("button", { onclick: () => { window.orderQuery = find.value.trim(); show("Orders"); } }, "Find order");
+    find.addEventListener("keydown", (e) => { if (e.key === "Enter") findBtn.click(); });
+    const { orders } = await call("admin", { action: "orders", status: sel.value || undefined, q: window.orderQuery || undefined });
+    const exportBtn = el("button", { class: "primary", onclick: async () => {   // accountant file: all orders, not only the ones on screen
+      try {
+        say("Preparing file...");
+        const all = (await call("admin", { action: "orders", export: true, status: sel.value || undefined })).orders;
+        const head = ["Order ID", "Created", "Paid at", "Completed at", "Status", "Product", "Buyer username", "Buyer name", "Seller username", "Seller name", "Seller IBAN", "IBAN verified",
+                      "Total SAR (buyer paid)", "Item SAR", "Shipping SAR", "Commission SAR (our revenue)", "Seller amount SAR", "Moyasar payment ID", "Paid out to seller at", "Refund reason"];
+        download(`cashO-orders-${day()}.csv`, [head, ...all.map((o) => [o.id, o.created_at, o.paid_at, o.completed_at, o.status, o.product_title, o.buyer_username, o.buyer_name,
+          o.seller_username, o.seller_name, o.seller_iban, o.seller_iban_verified ? "yes" : "no", num(o.total_halalas), num(o.item_halalas), num(o.shipping_halalas),
+          num(o.commission_halalas), num(o.seller_halalas), o.payment_id, o.paid_out_at, o.refund_reason])]);
+        say(`Downloaded ${all.length} orders.`, "ok");
+      } catch (e) { say(e.message, "bad"); }
+    } }, "Download CSV (accountant file)");
+    v.append(el("div", { class: "row" }, find, findBtn, window.orderQuery ? el("button", { onclick: () => { window.orderQuery = ""; show("Orders"); } }, "Show all") : null));
+    v.append(el("div", { class: "row" }, sel, isOwner ? exportBtn : null, el("span", { class: "mut" }, `${orders.length} loaded (latest 1,000; the CSV has all)`)));
+    const t = el("table", {}, el("tr", {}, ...["Order", "Product", "Status", "Buyer", "Seller", "Total", "Commission", "Note", "Created"].map((h) => el("th", {}, h))));
+    for (const o of orders) t.append(el("tr", {}, el("td", { title: o.id }, orderNo(o.id), el("span", { hidden: "" }, " " + o.id)), el("td", {}, o.product_title), el("td", {}, o.status), el("td", {}, "@" + o.buyer_username), el("td", {}, `${o.seller_name} (@${o.seller_username})`),
+      el("td", {}, sar(o.total_halalas)), el("td", {}, sar(o.commission_halalas)),
+      el("td", { class: "mut" }, [o.refund_reason, o.paid_out_at ? "paid out" : ""].filter(Boolean).join(", ")), el("td", { class: "mut" }, when(o.created_at))));
+    v.append(t);
+  },
+
+  async Payouts(v) {
+    const { payouts } = await call("refund", { action: "payouts" });
+    v.append(el("p", { class: "mut" }, "Owed = item price - commission + shipping fee, completed orders only, IBAN-verified sellers only. Transfer the money from your bank first, then press Mark paid."));
+    if (!payouts.length) v.append(el("p", {}, "Nothing to pay out right now."));
+    else v.append(el("button", { onclick: () => download(`cashO-payouts-${day()}.csv`, [["Seller name", "IBAN", "Orders", "Amount to transfer SAR", "List date"],
+      ...payouts.map((p) => [p.full_name, p.iban, p.orders, num(p.owed_halalas), p.as_of])]) }, "Download this list (CSV)"));
+    for (const p of payouts) {
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${p.full_name} · ${sar(p.owed_halalas)}`), el("div", {}, `IBAN: ${p.iban}`), el("div", { class: "mut" }, `${p.orders} order(s)`),
+        el("div", { class: "row" }, el("button", { class: "primary", onclick: () => confirm(`Have you transferred ${sar(p.owed_halalas)} to ${p.full_name}?`) && act("refund", { action: "paid", seller_id: p.seller_id, as_of: p.as_of }, "Marked as paid") }, "Mark paid"))));
+    }
+  },
+};
+
+let showSeq = 0;
+async function show(name) {
+  tab = name; const mine = ++showSeq;
+  for (const b of $("tabs").children) b.classList.toggle("on", b.textContent === name);
+  // Every load gets its OWN container. Before, all tabs wrote into the same box, so a slow tab that finished after you had moved on
+  // added its content to the newer tab (everything showed together). Now an old tab can only write into a box nobody sees any more.
+  const v = el("div"); $("view").replaceChildren(v);
+  const loading = el("p", { class: "mut" }, "Loading…"); v.append(loading);
+  try { await TABS[name](v); } catch (e) { if (mine === showSeq) say(e.message, "bad"); }
+  loading.remove();
+  if (mine === showSeq) applyFilter();   // keep the search text when a tab reloads after an action
+}
+$("q").addEventListener("input", applyFilter);
+
+$("go").onclick = async () => {
+  secret = $("secret").value.trim(); $("secret").value = "";
+  if (!secret) return;
+  let me;
+  try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
+  // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
+  isOwner = !!me.owner;
+  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts", "Referrals", "Promotions", "Email users", "Ads"].includes(n));
+  say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except money, payouts and team).`, "ok");
+  $("q").hidden = false;
+  const nav = $("tabs"); nav.hidden = false; nav.replaceChildren(...names.map((n) => el("button", { onclick: () => show(n) }, n)));
+  show("Claims");
+};
+$("secret").addEventListener("keydown", (e) => { if (e.key === "Enter") $("go").click(); });
+</script>
+</body>
+</html>
