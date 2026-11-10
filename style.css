@@ -1,9 +1,21 @@
-:root { --bg:#fff; --fg:#111; --mut:#666; --line:#ddd; --link:#0a58ca; }
-@media (prefers-color-scheme: dark) { :root { --bg:#121212; --fg:#eee; --mut:#a0a0a0; --line:#333; --link:#7db4ff; } }
-body { margin:0; padding:24px 16px 64px; background:var(--bg); color:var(--fg); font:16px/1.6 -apple-system, "Segoe UI", Tahoma, sans-serif; }
-main { max-width:720px; margin:0 auto; }
-h1 { font-size:28px; margin:0 0 4px; } h2 { font-size:20px; margin:28px 0 6px; }
-p, li { margin:8px 0; } ul { padding-inline-start:22px; }
+@font-face { font-family:"Manrope"; src:url(assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight:200 800; font-display:swap; }
+@font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight:400; font-display:swap; }
+@font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Bold.ttf) format("truetype"); font-weight:700; font-display:swap; }
+/* Casho brand kit: emerald, deep emerald, forest, ivory, cream, mint, gold */
+:root { --emerald:#188B67; --deep:#126C50; --forest:#122D24; --ivory:#F1E8D6; --gold:#BFA060;
+  --bg:var(--ivory); --card:#FFFDF8; --fg:#122D24; --mut:#5f6f66; --line:#e3d8c0; --link:#126C50; --head:#126C50; }
+@media (prefers-color-scheme: dark) { :root { --bg:#122D24; --card:#183A2F; --fg:#F5EEDD; --mut:#a9bdb3; --line:#27493c; --link:#48C5A2; --head:#FFEBC6; } }
+* { box-sizing:border-box; }
+body { margin:0; padding:20px 16px 64px; background:var(--bg); color:var(--fg); font:16px/1.65 "Manrope","Tajawal",-apple-system,"Segoe UI",sans-serif; }
+[lang=ar] { font-family:"Tajawal","Manrope",-apple-system,"Segoe UI",sans-serif; }
+header.brand { max-width:760px; margin:0 auto 14px; padding:0 4px; }
+header.brand img { height:38px; width:auto; display:block; } header.brand .logo-dark { display:none; }
+@media (prefers-color-scheme: dark) { header.brand .logo-light { display:none; } header.brand .logo-dark { display:block; } }
+main { max-width:760px; margin:0 auto; background:var(--card); border:1px solid var(--line); border-radius:22px; padding:8px 28px 36px; box-shadow:0 10px 30px rgba(18,45,36,.10); }
+h1 { font-size:30px; margin:20px 0 4px; color:var(--head); } h2 { font-size:20px; margin:30px 0 6px; color:var(--head); }
+p, li { margin:8px 0; } ul { padding-inline-start:22px; } li::marker { color:var(--emerald); }
 a { color:var(--link); } .mut { color:var(--mut); font-size:14px; }
-nav { margin:12px 0 24px; padding-bottom:12px; border-bottom:1px solid var(--line); display:flex; gap:16px; flex-wrap:wrap; }
+nav { margin:14px 0 22px; padding-bottom:14px; border-bottom:2px solid var(--gold); display:flex; gap:10px 18px; flex-wrap:wrap; font-weight:700; }
+nav a { text-decoration:none; }
 section + section { margin-top:48px; padding-top:24px; border-top:1px solid var(--line); }
+@media (max-width:520px) { main { padding:4px 18px 28px; border-radius:18px; } }
