@@ -168,7 +168,7 @@
     }).catch(function () { brand(); });
     else get("products?id=eq." + id + "&select=title,price_halalas,photos,description,seller_id&limit=1").then(function (r) {
       var p = r && r[0]; if (!p) return brand();
-      show({ chip: kind === "v" ? "video" : "item", title: p.title, price: sar(p.price_halalas), desc: p.description, photo: (p.photos || [])[0] });
+      show({ chip: "item", title: p.title, price: sar(p.price_halalas), desc: p.description, photo: (p.photos || [])[0] });
       get("profiles?id=eq." + p.seller_id + "&select=display_name,username&limit=1").then(function (s) { if (s && s[0] && current) { current.by = "@" + (s[0].username || s[0].display_name); draw(); } });
     }).catch(function () { brand(); });
     if (/iPhone|iPad|Android/i.test(navigator.userAgent)) location.href = app;   // on a phone, also try to open the app
