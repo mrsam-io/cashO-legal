@@ -1,22 +1,202 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Casho</title>
-<meta name="theme-color" content="#122D24"><link rel="icon" href="assets/icon.png"><link rel="stylesheet" href="style.css">
+<title>Casho · كاشو — Shop live in Saudi Arabia</title>
+<meta name="description" content="Casho is the live-selling marketplace for Saudi Arabia. Watch sellers live, shop short videos and buy in one tap. · كاشو سوق البيع المباشر في السعودية.">
+<meta property="og:title" content="Casho · كاشو">
+<meta property="og:description" content="Shop live from sellers in Saudi Arabia. Watch, bid and buy on Casho.">
+<meta property="og:image" content="https://appcasho.com/assets/og.png">
+<meta name="theme-color" content="#122D24">
+<link rel="icon" href="assets/icon.png">
+<link rel="preload" href="assets/fonts/Manrope-Variable.ttf" as="font" type="font/ttf" crossorigin>
+<style>
+@font-face { font-family:"Manrope"; src:url(assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight:200 800; font-display:swap; }
+@font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight:400; font-display:swap; }
+@font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Bold.ttf) format("truetype"); font-weight:700; font-display:swap; }
+:root { --emerald:#188B67; --deep:#126C50; --forest:#122D24; --forest2:#183A2F; --ivory:#F1E8D6; --cream:#FFEBC6; --gold:#BFA060; --mint:#48C5A2; --ink:#122D24; --mut:#5f6f66;
+  --s1:8px; --s2:16px; --s3:24px; --s4:40px; --s5:72px; }
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0; background:var(--forest); color:var(--cream); font:17px/1.65 "Manrope","Tajawal",-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+html[lang=ar] body { font-family:"Tajawal","Manrope",-apple-system,"Segoe UI",sans-serif; line-height:1.8; }
+.en, .ar { display:none; } html[lang=en] .en, html[lang=ar] .ar { display:inline; }
+html[lang=en] .en.b, html[lang=ar] .ar.b { display:block; }
+a { color:inherit; } img { max-width:100%; display:block; }
+:focus-visible { outline:3px solid var(--gold); outline-offset:3px; border-radius:8px; }
+.wrap { max-width:1120px; margin:0 auto; padding:0 20px; }
+
+/* top bar */
+.top { display:flex; align-items:center; justify-content:space-between; padding:18px 0; }
+.top img { height:40px; width:auto; }
+.lang { background:transparent; color:var(--cream); border:1.5px solid var(--gold); border-radius:999px; padding:8px 18px; font:700 15px inherit; font-family:inherit; cursor:pointer; min-height:44px; }
+.lang:hover { background:rgba(191,160,96,.16); }
+
+/* hero */
+.hero { display:grid; grid-template-columns:1.05fr .95fr; gap:var(--s4); align-items:center; padding:var(--s4) 0 var(--s5); }
+.pill { display:inline-block; padding:6px 14px; border:1px solid var(--gold); border-radius:999px; font-size:13px; font-weight:700; letter-spacing:.04em; color:var(--gold); text-transform:uppercase; }
+html[lang=ar] .pill { letter-spacing:0; text-transform:none; font-size:14px; }
+h1 { font-size:clamp(38px,6.4vw,68px); line-height:1.08; margin:18px 0 18px; color:#fff; letter-spacing:-.02em; text-wrap:balance; }
+html[lang=ar] h1 { letter-spacing:0; line-height:1.3; }
+h1 em { font-style:normal; color:var(--mint); }
+.lead { font-size:clamp(18px,2.2vw,21px); color:#d9e3dc; max-width:34em; margin:0 0 var(--s3); }
+.cta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+.btn { display:inline-flex; align-items:center; gap:10px; min-height:52px; padding:0 26px; border-radius:14px; font-weight:800; font-size:17px; text-decoration:none; font-family:inherit; }
+.btn.primary { background:var(--emerald); color:#fff; border:2px solid var(--emerald); }
+.btn.ghost { border:2px solid var(--gold); color:var(--cream); }
+.btn[aria-disabled=true] { cursor:default; }
+.btn svg { width:22px; height:22px; flex:none; }
+.note { font-size:14px; color:#a9bdb3; margin-top:14px; }
+
+/* phones */
+.phones { position:relative; display:flex; justify-content:center; min-height:560px; }
+.phones::before { content:""; position:absolute; inset:8% 6%; background:radial-gradient(closest-side,rgba(72,197,162,.30),transparent 70%); z-index:0; }
+.phone { position:relative; z-index:1; width:min(250px,46vw); border-radius:38px; background:#000; border:9px solid #0a1914; box-shadow:0 0 0 1.5px var(--gold),0 30px 60px rgba(0,0,0,.45); overflow:hidden; }
+.phone img { width:100%; height:auto; }
+.phone.a { transform:translateY(24px) rotate(-4deg); margin-inline-end:-26px; }
+.phone.b { transform:translateY(-18px) rotate(3deg); }
+@media (prefers-reduced-motion:no-preference) {
+  .phone { animation:float 7s ease-in-out infinite; } .phone.b { animation-delay:-3.5s; }
+  @keyframes float { 50% { translate:0 -10px; } }
+  .rise { opacity:0; translate:0 18px; transition:opacity .6s ease, translate .6s ease; } .rise.in { opacity:1; translate:0 0; }
+}
+
+/* sections */
+.light { background:var(--ivory); color:var(--ink); }
+.light h2 { color:var(--deep); }
+section { padding:var(--s5) 0; }
+h2 { font-size:clamp(28px,4vw,42px); line-height:1.15; margin:0 0 12px; color:#fff; text-wrap:balance; }
+html[lang=ar] h2 { line-height:1.4; }
+.sub { font-size:19px; max-width:38em; margin:0 0 var(--s4); color:inherit; opacity:.85; }
+.steps { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; counter-reset:s; }
+.step { background:#FFFDF8; border:1px solid #e3d8c0; border-radius:22px; padding:28px 24px; position:relative; }
+.step::before { counter-increment:s; content:counter(s); position:absolute; top:-18px; inset-inline-start:22px; width:40px; height:40px; border-radius:50%; background:var(--emerald); color:#fff; display:grid; place-items:center; font-weight:800; }
+.step h3 { margin:8px 0 6px; font-size:22px; color:var(--deep); }
+.step p { margin:0; color:var(--mut); }
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.card { background:var(--forest2); border:1px solid #27493c; border-radius:22px; padding:26px 24px; }
+.card .ic { width:48px; height:48px; border-radius:14px; background:rgba(72,197,162,.14); display:grid; place-items:center; margin-bottom:14px; }
+.card svg { width:26px; height:26px; stroke:var(--mint); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.card h3 { margin:0 0 6px; font-size:20px; color:#fff; }
+.card p { margin:0; color:#c6d4cb; font-size:16px; }
+.sell { display:grid; grid-template-columns:1.1fr .9fr; gap:var(--s4); align-items:center; }
+.sell ul { list-style:none; padding:0; margin:0 0 var(--s3); display:grid; gap:12px; }
+.sell li { display:flex; gap:12px; align-items:flex-start; }
+.sell li::before { content:""; flex:none; margin-top:7px; width:12px; height:12px; border-radius:50%; background:var(--emerald); box-shadow:0 0 0 4px rgba(24,139,103,.18); }
+.badge-box { background:var(--forest); color:var(--cream); border-radius:26px; padding:34px 28px; text-align:center; border:1px solid var(--gold); }
+.badge-box strong { display:block; font-size:44px; color:var(--mint); line-height:1.1; }
+.final { text-align:center; }
+.final .cta { justify-content:center; }
+footer { border-top:1px solid #27493c; padding:30px 0 44px; color:#a9bdb3; font-size:15px; }
+footer .wrap { display:flex; flex-wrap:wrap; gap:14px 28px; justify-content:space-between; align-items:center; }
+footer nav { display:flex; flex-wrap:wrap; gap:8px 22px; } footer a { text-decoration:none; padding:6px 0; } footer a:hover { color:#fff; text-decoration:underline; }
+
+@media (max-width:860px) {
+  .hero, .sell { grid-template-columns:1fr; text-align:start; }
+  .phones { min-height:480px; order:2; } .phone { width:min(210px,42vw); }
+  .steps, .grid { grid-template-columns:1fr; gap:26px 0; } .grid { gap:16px; }
+  section { padding:var(--s4) 0 56px; }
+}
+</style>
 </head>
 <body>
-<header class="brand"><a href="index.html"><img class="logo-light" src="assets/logo-light.png" alt="Casho"><img class="logo-dark" src="assets/logo-dark.png" alt="Casho"></a></header>
-<main>
-<h1>Casho · كاشو</h1>
-<p>Live-selling marketplace for Saudi Arabia. · سوق البيع المباشر في المملكة العربية السعودية.</p>
-<ul>
-<li><a href="support.html">Support · الدعم</a></li>
-<li><a href="terms.html">Terms of Use · شروط الاستخدام</a></li>
-<li><a href="privacy.html">Privacy Policy · سياسة الخصوصية</a></li>
-</ul>
-<p class="mut">Support · الدعم: <a href="mailto:support@appcasho.com">support@appcasho.com</a></p>
-</main>
+<div class="wrap">
+  <header class="top">
+    <a href="index.html" aria-label="Casho"><img src="assets/logo-dark.png" alt="Casho" width="146" height="40"></a>
+    <button class="lang" id="lang" type="button" aria-label="Switch language · تغيير اللغة"><span class="en">العربية</span><span class="ar">English</span></button>
+  </header>
+
+  <main>
+  <div class="hero">
+    <div>
+      <span class="pill"><span class="en">Live-selling marketplace</span><span class="ar">سوق البيع المباشر</span></span>
+      <h1><span class="en">Shop live. <em>Bid. Buy.</em> Saudi Arabia.</span><span class="ar">تسوّق مباشرة. <em>زايد. اشترِ.</em> من السعودية.</span></h1>
+      <p class="lead"><span class="en">Watch sellers go live, see the product in action, and buy it right there. Casho brings the trust of a real shop to your phone.</span><span class="ar">شاهد البائعين في بث مباشر، وشاهد المنتج أمامك، واشترِه في نفس اللحظة. كاشو يجمع ثقة المتجر الحقيقي في جوالك.</span></p>
+      <div class="cta">
+        <span class="btn primary" aria-disabled="true"><span class="en">Coming soon on the App Store</span><span class="ar">قريباً على آب ستور</span></span>
+        <a class="btn ghost" href="#how"><span class="en">How it works</span><span class="ar">كيف يعمل</span></a>
+      </div>
+      <p class="note"><span class="en">Launching first on iPhone. Android follows.</span><span class="ar">نبدأ بالآيفون أولاً، ثم أندرويد.</span></p>
+    </div>
+    <div class="phones" aria-hidden="false">
+      <div class="phone a"><img src="assets/shot-shop.jpg" width="460" height="1000" alt="Casho shop screen with products and prices"></div>
+      <div class="phone b"><img src="assets/shot-explore.jpg" width="460" height="1000" alt="Casho explore screen with videos and live shows"></div>
+    </div>
+  </div>
+  </main>
+</div>
+
+<section class="light" id="how">
+  <div class="wrap">
+    <h2 class="rise"><span class="en">Shopping that feels real</span><span class="ar">تسوّق تحسّه حقيقي</span></h2>
+    <p class="sub rise"><span class="en">Three steps, no guessing about what you are buying.</span><span class="ar">ثلاث خطوات، ولا تخمين في اللي تشتريه.</span></p>
+    <div class="steps">
+      <div class="step rise"><h3><span class="en">Watch</span><span class="ar">شاهد</span></h3><p><span class="en">Join a live show or scroll short videos from sellers across the Kingdom.</span><span class="ar">ادخل بث مباشر أو تصفّح فيديوهات قصيرة من بائعين في أنحاء المملكة.</span></p></div>
+      <div class="step rise"><h3><span class="en">Ask</span><span class="ar">اسأل</span></h3><p><span class="en">Chat with the seller while they show you the item and answer your questions.</span><span class="ar">تحدّث مع البائع وهو يعرض لك المنتج ويجاوب على أسئلتك.</span></p></div>
+      <div class="step rise"><h3><span class="en">Buy</span><span class="ar">اشترِ</span></h3><p><span class="en">Tap Buy, pay securely, and follow your order until it arrives.</span><span class="ar">اضغط اشترِ، وادفع بأمان، وتابع طلبك حتى يوصلك.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2 class="rise"><span class="en">Everything in one app</span><span class="ar">كل شي في تطبيق واحد</span></h2>
+    <p class="sub rise"><span class="en">Built for Saudi shoppers and sellers, in Arabic and English.</span><span class="ar">مصمم للمتسوق والبائع في السعودية، بالعربي والإنجليزي.</span></p>
+    <div class="grid">
+      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="M16 10l5-3v10l-5-3"/></svg></div><h3><span class="en">Live shows</span><span class="ar">بث مباشر</span></h3><p><span class="en">Sellers go live and sell as they show. Pick from their list and buy in seconds.</span><span class="ar">البائع يبث ويبيع وهو يعرض. اختر من قائمته واشترِ في ثواني.</span></p></div>
+      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></div><h3><span class="en">Short videos</span><span class="ar">فيديوهات قصيرة</span></h3><p><span class="en">A For You feed of real products, with a Buy button on every video.</span><span class="ar">صفحة «لك» بمنتجات حقيقية، وزر شراء على كل فيديو.</span></p></div>
+      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16l1.5-5.5A2 2 0 018.400 9h7.200a2 2 0 011.900 1.500L19 16"/><rect x="3" y="16" width="18" height="4" rx="1.500"/><circle cx="7.500" cy="18" r=".5"/><circle cx="16.500" cy="18" r=".5"/></svg></div><h3><span class="en">Vehicles, properties and auctions</span><span class="ar">سيارات وعقارات ومزادات</span></h3><p><span class="en">Browse cars, bikes, apartments and villas from verified sellers, and bid in live auctions.</span><span class="ar">تصفّح سيارات ودراجات وشقق وفلل من بائعين موثّقين، وزايد في مزادات مباشرة.</span></p></div>
+      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.500-3 8-7 10-4-2-7-5.500-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3><span class="en">Verified sellers</span><span class="ar">بائعون موثّقون</span></h3><p><span class="en">Sellers are checked before they can sell, and you can report anything that looks wrong.</span><span class="ar">نتحقق من البائعين قبل أن يبيعوا، وتقدر تبلّغ عن أي شي مريب.</span></p></div>
+      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M3 10h18M7 15h3"/></svg></div><h3><span class="en">Secure payments</span><span class="ar">دفع آمن</span></h3><p><span class="en">Pay inside the app. Your card details never reach the seller.</span><span class="ar">ادفع داخل التطبيق. بيانات بطاقتك ما توصل للبائع أبداً.</span></p></div>
+      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div><h3><span class="en">Track every order</span><span class="ar">تابع كل طلب</span></h3><p><span class="en">See each order from payment to delivery, and chat with the seller about it.</span><span class="ar">تابع كل طلب من الدفع إلى التوصيل، وتحدّث مع البائع عنه.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="light">
+  <div class="wrap sell">
+    <div>
+      <h2 class="rise"><span class="en">Sell on Casho</span><span class="ar">بِع على كاشو</span></h2>
+      <ul class="rise">
+        <li><span class="en">Open a live show from your phone, no extra equipment.</span><span class="ar">افتح بث مباشر من جوالك، بدون معدات إضافية.</span></li>
+        <li><span class="en">Add your products once, show them in any live.</span><span class="ar">أضف منتجاتك مرة واحدة واعرضها في أي بث.</span></li>
+        <li><span class="en">Get paid to your bank account, and manage orders in one place.</span><span class="ar">استلم أرباحك في حسابك البنكي، وأدر طلباتك من مكان واحد.</span></li>
+      </ul>
+    </div>
+    <div class="badge-box rise"><strong>Casho · كاشو</strong><p style="margin:10px 0 0"><span class="en">Made in Saudi Arabia, for Saudi Arabia.</span><span class="ar">صُنع في السعودية، للسعودية.</span></p></div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <h2 class="rise"><span class="en">Be first when we open</span><span class="ar">كن أول من يجرّب</span></h2>
+    <p class="sub rise" style="margin-inline:auto"><span class="en">Casho is coming to the App Store soon. Questions? We reply fast.</span><span class="ar">كاشو قادم قريباً على آب ستور. عندك سؤال؟ نرد بسرعة.</span></p>
+    <div class="cta rise"><a class="btn primary" href="mailto:support@appcasho.com"><span class="en">Contact us</span><span class="ar">تواصل معنا</span></a><a class="btn ghost" href="support.html"><span class="en">Support</span><span class="ar">الدعم</span></a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>© <span id="yr">2026</span> Casho · كاشو — <span class="en">from Mrsam</span><span class="ar">من مرسم</span></div>
+    <nav aria-label="Legal"><a href="support.html"><span class="en">Support</span><span class="ar">الدعم</span></a><a href="terms.html"><span class="en">Terms of Use</span><span class="ar">شروط الاستخدام</span></a><a href="privacy.html"><span class="en">Privacy Policy</span><span class="ar">سياسة الخصوصية</span></a></nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var h = document.documentElement, key = "casho_lang";
+  function set(l) { h.lang = l; h.dir = l === "ar" ? "rtl" : "ltr"; try { localStorage.setItem(key, l); } catch (e) {} }
+  var saved = null; try { saved = localStorage.getItem(key); } catch (e) {}
+  set(saved || ((navigator.language || "").slice(0, 2) === "ar" ? "ar" : "en"));
+  document.getElementById("lang").addEventListener("click", function () { set(h.lang === "ar" ? "en" : "ar"); });
+  document.getElementById("yr").textContent = new Date().getFullYear();
+  var els = document.querySelectorAll(".rise");
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { threshold: .15 });
+    els.forEach(function (el) { io.observe(el); });
+  } else { els.forEach(function (el) { el.classList.add("in"); }); }
+})();
+</script>
 </body>
 </html>
