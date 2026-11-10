@@ -3,199 +3,326 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Casho · كاشو — Shop live in Saudi Arabia</title>
-<meta name="description" content="Casho is the live-selling marketplace for Saudi Arabia. Watch sellers live, shop short videos and buy in one tap. · كاشو سوق البيع المباشر في السعودية.">
+<title>Casho · كاشو — Shop live. Bid. Buy.</title>
+<meta name="description" content="Casho is the live-selling marketplace for Saudi Arabia. · كاشو سوق البيع المباشر في السعودية.">
 <meta property="og:title" content="Casho · كاشو">
 <meta property="og:description" content="Shop live from sellers in Saudi Arabia. Watch, bid and buy on Casho.">
 <meta property="og:image" content="https://appcasho.com/assets/og.png">
-<meta name="theme-color" content="#122D24">
+<meta name="theme-color" content="#0b1f18">
 <link rel="icon" href="assets/icon.png">
-<link rel="preload" href="assets/fonts/Manrope-Variable.ttf" as="font" type="font/ttf" crossorigin>
 <style>
 @font-face { font-family:"Manrope"; src:url(assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight:200 800; font-display:swap; }
 @font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight:400; font-display:swap; }
 @font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Bold.ttf) format("truetype"); font-weight:700; font-display:swap; }
-:root { --emerald:#188B67; --deep:#126C50; --forest:#122D24; --forest2:#183A2F; --ivory:#F1E8D6; --cream:#FFEBC6; --gold:#BFA060; --mint:#48C5A2; --ink:#122D24; --mut:#5f6f66;
-  --s1:8px; --s2:16px; --s3:24px; --s4:40px; --s5:72px; }
+:root { --bg:#0b1f18; --forest:#122D24; --card:#143228; --emerald:#188B67; --mint:#48C5A2; --gold:#BFA060; --cream:#FFEBC6; --ivory:#F1E8D6; --red:#ff4d5e; --line:rgba(255,235,198,.14); }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
-body { margin:0; background:var(--forest); color:var(--cream); font:17px/1.65 "Manrope","Tajawal",-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+body { margin:0; background:var(--bg); color:var(--cream); font:17px/1.65 "Manrope","Tajawal",-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
 html[lang=ar] body { font-family:"Tajawal","Manrope",-apple-system,"Segoe UI",sans-serif; line-height:1.8; }
 .en, .ar { display:none; } html[lang=en] .en, html[lang=ar] .ar { display:inline; }
-html[lang=en] .en.b, html[lang=ar] .ar.b { display:block; }
 a { color:inherit; } img { max-width:100%; display:block; }
-:focus-visible { outline:3px solid var(--gold); outline-offset:3px; border-radius:8px; }
-.wrap { max-width:1120px; margin:0 auto; padding:0 20px; }
+:focus-visible { outline:3px solid var(--gold); outline-offset:3px; border-radius:10px; }
+.wrap { max-width:1180px; margin:0 auto; padding:0 22px; position:relative; z-index:2; }
 
-/* top bar */
-.top { display:flex; align-items:center; justify-content:space-between; padding:18px 0; }
+/* living background */
+.aurora { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.aurora i { position:absolute; width:55vmax; height:55vmax; border-radius:50%; filter:blur(90px); opacity:.5; }
+.aurora i:nth-child(1) { background:#188B67; top:-20vmax; inset-inline-start:-15vmax; }
+.aurora i:nth-child(2) { background:#BFA060; opacity:.22; bottom:-25vmax; inset-inline-end:-10vmax; }
+.aurora i:nth-child(3) { background:#48C5A2; opacity:.18; top:35vh; inset-inline-start:40vw; width:35vmax; height:35vmax; }
+.grain { position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.07; background-image:radial-gradient(rgba(255,235,198,.9) 1px,transparent 1px); background-size:26px 26px; mask-image:linear-gradient(#000,transparent 70%); }
+
+/* top */
+.top { display:flex; align-items:center; justify-content:space-between; padding:20px 0; }
 .top img { height:40px; width:auto; }
-.lang { background:transparent; color:var(--cream); border:1.5px solid var(--gold); border-radius:999px; padding:8px 18px; font:700 15px inherit; font-family:inherit; cursor:pointer; min-height:44px; }
-.lang:hover { background:rgba(191,160,96,.16); }
+.lang { background:rgba(255,235,198,.06); color:var(--cream); border:1.5px solid var(--gold); border-radius:999px; padding:0 20px; min-height:44px; font:700 15px inherit; font-family:inherit; cursor:pointer; backdrop-filter:blur(8px); }
+.lang:hover { background:rgba(191,160,96,.2); }
 
 /* hero */
-.hero { display:grid; grid-template-columns:1.05fr .95fr; gap:var(--s4); align-items:center; padding:var(--s4) 0 var(--s5); }
-.pill { display:inline-block; padding:6px 14px; border:1px solid var(--gold); border-radius:999px; font-size:13px; font-weight:700; letter-spacing:.04em; color:var(--gold); text-transform:uppercase; }
-html[lang=ar] .pill { letter-spacing:0; text-transform:none; font-size:14px; }
-h1 { font-size:clamp(38px,6.4vw,68px); line-height:1.08; margin:18px 0 18px; color:#fff; letter-spacing:-.02em; text-wrap:balance; }
-html[lang=ar] h1 { letter-spacing:0; line-height:1.3; }
-h1 em { font-style:normal; color:var(--mint); }
-.lead { font-size:clamp(18px,2.2vw,21px); color:#d9e3dc; max-width:34em; margin:0 0 var(--s3); }
-.cta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
-.btn { display:inline-flex; align-items:center; gap:10px; min-height:52px; padding:0 26px; border-radius:14px; font-weight:800; font-size:17px; text-decoration:none; font-family:inherit; }
-.btn.primary { background:var(--emerald); color:#fff; border:2px solid var(--emerald); }
-.btn.ghost { border:2px solid var(--gold); color:var(--cream); }
+.hero { display:grid; grid-template-columns:1.1fr .9fr; gap:30px; align-items:center; min-height:calc(100vh - 80px); padding:20px 0 60px; }
+.pill { display:inline-flex; align-items:center; gap:10px; padding:7px 16px; border:1px solid var(--line); background:rgba(255,235,198,.05); border-radius:999px; font-size:14px; font-weight:700; color:var(--cream); backdrop-filter:blur(8px); }
+.dot { width:9px; height:9px; border-radius:50%; background:var(--red); box-shadow:0 0 0 0 rgba(255,77,94,.7); }
+h1 { font-size:clamp(46px,8.4vw,112px); line-height:.98; margin:22px 0 22px; letter-spacing:-.035em; color:#fff; font-weight:800; }
+html[lang=ar] h1 { letter-spacing:0; line-height:1.25; }
+h1 .w { display:inline-block; }
+h1 .g { background:linear-gradient(100deg,var(--mint),var(--cream) 55%,var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.lead { font-size:clamp(18px,2vw,22px); max-width:30em; color:#cfdcd3; margin:0 0 30px; }
+.cta { display:flex; flex-wrap:wrap; gap:12px; }
+.btn { display:inline-flex; align-items:center; justify-content:center; min-height:56px; padding:0 28px; border-radius:16px; font:800 17px inherit; font-family:inherit; text-decoration:none; }
+.btn svg { width:22px; height:22px; flex:none; margin-inline-end:10px; }
+.btn.p { background:linear-gradient(135deg,var(--emerald),#1fae82); color:#fff; box-shadow:0 12px 36px rgba(24,139,103,.45); }
+.btn.g { border:2px solid var(--gold); color:var(--cream); background:rgba(255,235,198,.04); }
 .btn[aria-disabled=true] { cursor:default; }
-.btn svg { width:22px; height:22px; flex:none; }
-.note { font-size:14px; color:#a9bdb3; margin-top:14px; }
+.note { color:#9fb4a9; font-size:14px; margin-top:14px; }
 
-/* phones */
-.phones { position:relative; display:flex; justify-content:center; min-height:560px; }
-.phones::before { content:""; position:absolute; inset:8% 6%; background:radial-gradient(closest-side,rgba(72,197,162,.30),transparent 70%); z-index:0; }
-.phone { position:relative; z-index:1; width:min(250px,46vw); border-radius:38px; background:#000; border:9px solid #0a1914; box-shadow:0 0 0 1.5px var(--gold),0 30px 60px rgba(0,0,0,.45); overflow:hidden; }
-.phone img { width:100%; height:auto; }
-.phone.a { transform:translateY(24px) rotate(-4deg); margin-inline-end:-26px; }
-.phone.b { transform:translateY(-18px) rotate(3deg); }
-@media (prefers-reduced-motion:no-preference) {
-  .phone { animation:float 7s ease-in-out infinite; } .phone.b { animation-delay:-3.5s; }
-  @keyframes float { 50% { translate:0 -10px; } }
-  .rise { opacity:0; translate:0 18px; transition:opacity .6s ease, translate .6s ease; } .rise.in { opacity:1; translate:0 0; }
-}
+/* stage + phone */
+.stage { position:relative; display:grid; place-items:center; min-height:640px; perspective:1100px; }
+.glow { position:absolute; width:420px; height:420px; border-radius:50%; background:radial-gradient(closest-side,rgba(72,197,162,.5),transparent 70%); }
+.phone { position:relative; width:min(300px,64vw); aspect-ratio:9/19; border-radius:46px; background:#050f0b; border:10px solid #0d1d17; box-shadow:0 0 0 2px var(--gold),0 50px 90px rgba(0,0,0,.6),inset 0 0 0 2px #000; overflow:hidden; transform:rotateY(var(--ry,-14deg)) rotateX(var(--rx,6deg)); transition:transform .25s ease-out; transform-style:preserve-3d; }
+.phone::after { content:""; position:absolute; top:9px; left:50%; translate:-50% 0; width:84px; height:24px; background:#000; border-radius:20px; z-index:9; }
+.scr { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:flex-end; padding:14px 12px; font-size:12px; line-height:1.4; direction:ltr; text-align:start; }
+html[lang=ar] .scr { direction:rtl; }
+.vid { position:absolute; inset:0; background:radial-gradient(120% 60% at 20% 15%,#2d6b57,transparent 60%),radial-gradient(90% 60% at 85% 70%,#7a5a2a,transparent 60%),linear-gradient(180deg,#14352b,#0a1914); }
+.vid::before { content:""; position:absolute; left:50%; top:30%; translate:-50% 0; width:46%; aspect-ratio:1; border-radius:50%; background:radial-gradient(circle at 35% 30%,#ffe9b8,#bfa060 55%,#6d5528); box-shadow:0 30px 60px rgba(0,0,0,.5); }
+.vid::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.35),transparent 30%,rgba(0,0,0,.65)); }
+.live-top { position:absolute; top:40px; inset-inline:12px; display:flex; justify-content:space-between; align-items:center; z-index:3; }
+.live-tag { background:var(--red); color:#fff; font-weight:800; font-size:11px; padding:3px 9px; border-radius:6px; letter-spacing:.06em; display:flex; gap:6px; align-items:center; }
+.live-tag b { width:6px; height:6px; border-radius:50%; background:#fff; }
+.host { display:flex; gap:7px; align-items:center; background:rgba(0,0,0,.4); border-radius:999px; padding:3px 10px 3px 3px; z-index:3; }
+.host img { width:24px; height:24px; border-radius:50%; }
+.chat { position:relative; z-index:3; display:grid; gap:6px; margin-bottom:10px; min-height:96px; align-content:end; }
+.msg { background:rgba(0,0,0,.5); border-radius:12px; padding:5px 10px; width:fit-content; max-width:85%; color:#fff; backdrop-filter:blur(4px); }
+.msg b { color:var(--mint); margin-inline-end:5px; }
+.buy { position:relative; z-index:3; display:flex; gap:10px; align-items:center; background:rgba(8,20,15,.78); border:1px solid var(--line); border-radius:16px; padding:8px; backdrop-filter:blur(10px); }
+.buy .th { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#ffe9b8,#bfa060); flex:none; }
+.buy div { flex:1; min-width:0; } .buy strong { display:block; font-size:13px; color:#fff; } .buy span { color:#b9cdc2; font-size:12px; }
+.buy em { font-style:normal; background:var(--red); color:#fff; font-weight:800; padding:8px 16px; border-radius:999px; font-size:13px; }
+.hearts { position:absolute; inset-inline-end:10px; bottom:130px; width:30px; height:200px; z-index:3; }
+.hearts svg { position:absolute; bottom:0; width:22px; height:22px; fill:var(--red); opacity:0; }
 
-/* sections */
-.light { background:var(--ivory); color:var(--ink); }
-.light h2 { color:var(--deep); }
-section { padding:var(--s5) 0; }
-h2 { font-size:clamp(28px,4vw,42px); line-height:1.15; margin:0 0 12px; color:#fff; text-wrap:balance; }
-html[lang=ar] h2 { line-height:1.4; }
-.sub { font-size:19px; max-width:38em; margin:0 0 var(--s4); color:inherit; opacity:.85; }
-.steps { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; counter-reset:s; }
-.step { background:#FFFDF8; border:1px solid #e3d8c0; border-radius:22px; padding:28px 24px; position:relative; }
-.step::before { counter-increment:s; content:counter(s); position:absolute; top:-18px; inset-inline-start:22px; width:40px; height:40px; border-radius:50%; background:var(--emerald); color:#fff; display:grid; place-items:center; font-weight:800; }
-.step h3 { margin:8px 0 6px; font-size:22px; color:var(--deep); }
-.step p { margin:0; color:var(--mut); }
-.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
-.card { background:var(--forest2); border:1px solid #27493c; border-radius:22px; padding:26px 24px; }
-.card .ic { width:48px; height:48px; border-radius:14px; background:rgba(72,197,162,.14); display:grid; place-items:center; margin-bottom:14px; }
-.card svg { width:26px; height:26px; stroke:var(--mint); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-.card h3 { margin:0 0 6px; font-size:20px; color:#fff; }
-.card p { margin:0; color:#c6d4cb; font-size:16px; }
-.sell { display:grid; grid-template-columns:1.1fr .9fr; gap:var(--s4); align-items:center; }
-.sell ul { list-style:none; padding:0; margin:0 0 var(--s3); display:grid; gap:12px; }
-.sell li { display:flex; gap:12px; align-items:flex-start; }
-.sell li::before { content:""; flex:none; margin-top:7px; width:12px; height:12px; border-radius:50%; background:var(--emerald); box-shadow:0 0 0 4px rgba(24,139,103,.18); }
-.badge-box { background:var(--forest); color:var(--cream); border-radius:26px; padding:34px 28px; text-align:center; border:1px solid var(--gold); }
-.badge-box strong { display:block; font-size:44px; color:var(--mint); line-height:1.1; }
-.final { text-align:center; }
+/* floating chips around the phone */
+.chip { position:absolute; z-index:5; display:flex; gap:10px; align-items:center; padding:10px 16px; border-radius:16px; background:rgba(20,50,40,.72); border:1px solid var(--line); backdrop-filter:blur(14px); font-weight:700; font-size:14px; color:#fff; box-shadow:0 18px 40px rgba(0,0,0,.35); white-space:nowrap; }
+.chip small { display:block; font-weight:500; color:#b9cdc2; font-size:12px; }
+.chip svg { width:22px; height:22px; stroke:var(--mint); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.c1 { top:14%; inset-inline-start:-6%; } .c2 { top:46%; inset-inline-end:-10%; } .c3 { bottom:-2%; inset-inline-start:-8%; }
+
+/* marquee */
+.marq { border-block:1px solid var(--line); background:rgba(255,235,198,.03); overflow:hidden; position:relative; z-index:2; direction:ltr; }
+.track { display:flex; width:max-content; gap:0; animation:slide 38s linear infinite; }
+html[dir=rtl] .track { animation-direction:reverse; }
+.track span { padding:20px 34px; font-size:clamp(22px,3vw,34px); font-weight:800; color:transparent; -webkit-text-stroke:1.2px rgba(255,235,198,.55); white-space:nowrap; display:flex; align-items:center; gap:34px; }
+.track span::after { content:""; width:10px; height:10px; transform:rotate(45deg); background:var(--gold); }
+@keyframes slide { to { transform:translateX(-50%); } }
+
+/* story */
+.story { padding:110px 0 40px; }
+h2 { font-size:clamp(34px,5.4vw,64px); line-height:1.05; margin:0 0 16px; color:#fff; letter-spacing:-.025em; text-wrap:balance; }
+html[lang=ar] h2 { letter-spacing:0; line-height:1.35; }
+.sub { font-size:20px; color:#cfdcd3; max-width:34em; margin:0 0 50px; }
+.sgrid { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:start; }
+.steps { padding-block:6vh 14vh; }
+.step { min-height:62vh; display:flex; flex-direction:column; justify-content:center; opacity:.35; transition:opacity .4s; }
+.step.on { opacity:1; }
+.step .n { font-size:clamp(80px,12vw,150px); font-weight:800; line-height:.9; color:transparent; -webkit-text-stroke:1.5px var(--gold); }
+.step h3 { font-size:clamp(28px,3.6vw,44px); margin:10px 0 10px; color:#fff; }
+.step p { font-size:19px; color:#cfdcd3; max-width:24em; margin:0; }
+.sticky { position:sticky; top:12vh; height:76vh; display:grid; place-items:center; }
+.cap { display:none; }
+.sticky .phone { --ry:-8deg; --rx:3deg; max-height:74vh; }
+.scr { opacity:0; transition:opacity .5s; }
+.sticky[data-step="1"] .s1, .sticky[data-step="2"] .s2, .sticky[data-step="3"] .s3, .sticky[data-step="4"] .s4 { opacity:1; }
+.chatbig { display:grid; gap:8px; align-content:end; height:100%; padding-bottom:6px; }
+.bub { background:#1c4437; color:#fff; border-radius:14px 14px 14px 4px; padding:8px 12px; width:fit-content; max-width:88%; }
+.bub.me { background:var(--emerald); border-radius:14px 14px 4px 14px; margin-inline-start:auto; }
+.scr.s3, .scr.s4 { padding:0; }
+.shopm { height:100%; margin:0; padding:50px 12px 12px; background:linear-gradient(180deg,#0f2a21,#0b1f18); display:grid; align-content:start; gap:8px; }
+.shopm .sh { font-size:20px; color:#fff; }
+.chp { display:flex; gap:5px; flex-wrap:wrap; } .chp i { font-style:normal; padding:3px 9px; border-radius:999px; background:#1c4437; color:#cfe3d8; font-size:10px; } .chp i.on { background:#ffd84a; color:#2a2200; font-weight:800; }
+.pg { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.pc { background:#143228; border:1px solid var(--line); border-radius:12px; padding:6px; display:grid; gap:2px; }
+.pc u { display:block; aspect-ratio:1; border-radius:8px; margin-bottom:3px; } .pc span { color:#fff; font-weight:700; font-size:11px; } .pc em { font-style:normal; color:#b9cdc2; font-size:10px; }
+.co { height:100%; display:grid; gap:10px; align-content:center; text-align:center; background:linear-gradient(180deg,#0f2a21,#0b1f18); margin:0; padding:56px 16px 20px; }
+.co .rw { display:flex; justify-content:space-between; gap:8px; background:#143228; border:1px solid var(--line); border-radius:12px; padding:9px 12px; font-size:11px; color:#cfe3d8; } .co .rw b { color:#fff; }
+.co .it { background:#143228; border:1px solid var(--line); border-radius:14px; padding:12px; display:flex; gap:10px; align-items:center; text-align:start; }
+.co .th { width:42px; height:42px; border-radius:10px; background:linear-gradient(135deg,#ffe9b8,#bfa060); flex:none; }
+.co .pay { background:var(--emerald); color:#fff; font-weight:800; border-radius:14px; padding:13px; font-size:14px; }
+.co .ok { width:54px; height:54px; border-radius:50%; background:rgba(72,197,162,.18); display:grid; place-items:center; margin:6px auto 0; }
+.co .ok svg { width:28px; height:28px; stroke:var(--mint); fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+
+/* bento */
+.bento { padding:90px 0; }
+.bgrid { display:grid; grid-template-columns:repeat(6,1fr); gap:16px; }
+.cardx { position:relative; grid-column:span 2; background:linear-gradient(160deg,rgba(24,139,103,.16),rgba(20,50,40,.7)); border:1px solid var(--line); border-radius:26px; padding:28px 26px; overflow:hidden; min-height:230px; }
+.cardx.w { grid-column:span 3; } .cardx.x { grid-column:span 4; } .cardx.f { grid-column:span 6; min-height:0; }
+.cardx::before { content:""; position:absolute; inset:0; background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgba(72,197,162,.22),transparent 60%); opacity:0; transition:opacity .3s; }
+.cardx:hover::before { opacity:1; }
+.cardx > * { position:relative; }
+.cardx svg.i { width:34px; height:34px; stroke:var(--mint); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; margin-bottom:46px; display:block; }
+.cardx h3 { margin:0 0 8px; font-size:24px; color:#fff; }
+.cardx p { margin:0; color:#c6d4cb; font-size:16px; max-width:28em; }
+.big { font-size:clamp(46px,7vw,84px); font-weight:800; color:var(--gold); line-height:1; margin-bottom:12px; }
+
+/* sell + final */
+.sellx { padding:40px 0 110px; }
+.panel { border:1px solid var(--gold); border-radius:34px; padding:clamp(30px,6vw,70px); background:radial-gradient(90% 120% at 100% 0%,rgba(191,160,96,.18),transparent 60%),rgba(20,50,40,.55); display:grid; grid-template-columns:1.2fr .8fr; gap:34px; align-items:center; }
+.panel ul { list-style:none; padding:0; margin:20px 0 0; display:grid; gap:12px; font-size:18px; }
+.panel li { display:flex; gap:12px; } .panel li::before { content:""; flex:none; margin-top:9px; width:11px; height:11px; transform:rotate(45deg); background:var(--gold); }
+.emblem { display:grid; place-items:center; } .emblem img { width:min(220px,50vw); height:auto; aspect-ratio:1; border-radius:28%; box-shadow:0 0 0 2px var(--gold),0 0 80px rgba(72,197,162,.35),0 30px 60px rgba(0,0,0,.5); }
+.final { text-align:center; padding:60px 0 120px; }
+.mega { font-size:clamp(54px,15vw,200px); line-height:1; font-weight:800; margin:0 0 20px; letter-spacing:-.03em; color:transparent; -webkit-text-stroke:2px var(--gold); background:linear-gradient(100deg,transparent 35%,rgba(255,235,198,.9) 50%,transparent 65%) 200% 0/250% 100% no-repeat; -webkit-background-clip:text; background-clip:text; }
+html[lang=ar] .mega { letter-spacing:0; }
 .final .cta { justify-content:center; }
-footer { border-top:1px solid #27493c; padding:30px 0 44px; color:#a9bdb3; font-size:15px; }
+footer { border-top:1px solid var(--line); padding:30px 0 46px; color:#9fb4a9; font-size:15px; position:relative; z-index:2; }
 footer .wrap { display:flex; flex-wrap:wrap; gap:14px 28px; justify-content:space-between; align-items:center; }
-footer nav { display:flex; flex-wrap:wrap; gap:8px 22px; } footer a { text-decoration:none; padding:6px 0; } footer a:hover { color:#fff; text-decoration:underline; }
+footer nav { display:flex; flex-wrap:wrap; gap:6px 22px; } footer a { text-decoration:none; padding:6px 0; } footer a:hover { color:#fff; text-decoration:underline; }
 
-@media (max-width:860px) {
-  .hero, .sell { grid-template-columns:1fr; text-align:start; }
-  .phones { min-height:480px; order:2; } .phone { width:min(210px,42vw); }
-  .steps, .grid { grid-template-columns:1fr; gap:26px 0; } .grid { gap:16px; }
-  section { padding:var(--s4) 0 56px; }
+/* motion (only if the visitor allows it) */
+@media (prefers-reduced-motion:no-preference) {
+  .aurora i { animation:drift 18s ease-in-out infinite alternate; } .aurora i:nth-child(2) { animation-duration:23s; } .aurora i:nth-child(3) { animation-duration:27s; }
+  @keyframes drift { to { transform:translate(8vmax,6vmax) scale(1.15); } }
+  .dot { animation:ping 1.6s infinite; } @keyframes ping { 70% { box-shadow:0 0 0 10px rgba(255,77,94,0); } 100% { box-shadow:0 0 0 0 rgba(255,77,94,0); } }
+  h1 .w { opacity:0; transform:translateY(40px) rotate(2deg); animation:up .9s cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--i) * 110ms + 150ms); }
+  @keyframes up { to { opacity:1; transform:none; } }
+  .chip { animation:bob 6s ease-in-out infinite; } .c2 { animation-delay:-2s; } .c3 { animation-delay:-4s; }
+  @keyframes bob { 50% { translate:0 -14px; } }
+  .msg { opacity:0; animation:msg 12s infinite; } .msg:nth-child(1) { animation-delay:0s; } .msg:nth-child(2) { animation-delay:2.2s; } .msg:nth-child(3) { animation-delay:4.4s; } .msg:nth-child(4) { animation-delay:6.6s; }
+  @keyframes msg { 0% { opacity:0; transform:translateY(10px); } 6%,86% { opacity:1; transform:none; } 94%,100% { opacity:0; } }
+  .buy em { animation:pulse 1.8s infinite; } @keyframes pulse { 50% { transform:scale(1.1); box-shadow:0 0 0 8px rgba(255,77,94,.25); } }
+  .hearts svg { animation:heart 4s infinite; } .hearts svg:nth-child(2) { animation-delay:1.3s; inset-inline-start:8px; } .hearts svg:nth-child(3) { animation-delay:2.6s; inset-inline-start:2px; }
+  @keyframes heart { 0% { opacity:0; transform:translateY(0) scale(.6); } 15% { opacity:1; } 100% { opacity:0; transform:translateY(-170px) scale(1.2) rotate(14deg); } }
+  .mega { animation:shine 6s linear infinite; } @keyframes shine { to { background-position:-100% 0; } }
+  .rise { opacity:0; translate:0 30px; transition:opacity .7s, translate .7s cubic-bezier(.2,.8,.2,1); } .rise.in { opacity:1; translate:0 0; }
+}
+@media (prefers-reduced-motion:reduce) { .track { animation:none; } .msg { opacity:1; } }
+
+@media (max-width:900px) {
+  .hero { grid-template-columns:1fr; min-height:0; padding-top:10px; } .stage { min-height:560px; }
+  .c1 { inset-inline-start:0; } .c2 { inset-inline-end:0; }
+  .sgrid { grid-template-columns:1fr; gap:0; }
+  .sticky { order:-1; position:sticky; top:0; z-index:4; height:100dvh; margin:0 -22px; padding:18px 22px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; background:none; }
+  .sticky .phone { height:46dvh; width:auto; max-height:none; border-width:7px; border-radius:30px; transform:none; transform-style:flat; flex:none; }
+  .sticky .phone::after { width:50px; height:14px; top:6px; } .sticky .scr { font-size:9px; padding:8px; } .sticky .scr.s3, .sticky .scr.s4 { padding:0; } .sticky .live-top { top:26px; }
+  .sticky .buy { padding:5px; gap:6px; border-radius:10px; } .sticky .buy .th { width:22px; height:22px; border-radius:6px; } .sticky .buy strong { font-size:9px; } .sticky .buy span { font-size:8px; } .sticky .buy em { padding:4px 9px; font-size:9px; animation:none; }
+  .sticky .shopm { padding:30px 8px 8px; gap:5px; } .sticky .shopm .sh { font-size:13px; } .sticky .chp i { font-size:8px; padding:2px 6px; } .sticky .pg { gap:5px; } .sticky .pc { padding:4px; } .sticky .pc span { font-size:8px; } .sticky .pc em { font-size:8px; }
+  .sticky .co { padding:34px 10px 10px; gap:6px; } .sticky .co .it { padding:7px; } .sticky .co .th { width:28px; height:28px; } .sticky .co .ok { width:34px; height:34px; } .sticky .co .ok svg { width:17px; height:17px; } .sticky .co .rw { font-size:8px; padding:5px 8px; } .sticky .co .pay { font-size:10px; padding:8px; }
+  .cap { display:block; width:100%; max-width:430px; text-align:start; min-height:26dvh; }
+  .cap .n { font-size:46px; line-height:1; } .cap h3 { font-size:28px; margin:6px 0 6px; color:#fff; } .cap p { font-size:17px; margin:0; color:#cfdcd3; }
+  .steps { padding-block:0; margin-top:-100dvh; } .step { min-height:80dvh; visibility:hidden; }
+  .bgrid { grid-template-columns:1fr; } .cardx, .cardx.w, .cardx.x, .cardx.f { grid-column:auto; min-height:0; } .cardx svg.i { margin-bottom:22px; }
+  .panel { grid-template-columns:1fr; } .story { padding-top:70px; } .bento { padding:50px 0; }
 }
 </style>
 </head>
 <body>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div><div class="grain" aria-hidden="true"></div>
+
 <div class="wrap">
   <header class="top">
-    <a href="index.html" aria-label="Casho"><img src="assets/logo-dark.png" alt="Casho" width="146" height="40"></a>
+    <a href="index.html" aria-label="Casho"><img class="en" src="assets/logo-dark.png" alt="Casho" width="146" height="40"><img class="ar" src="assets/logo-ar-dark.png" alt="كاشو" width="97" height="40"></a>
     <button class="lang" id="lang" type="button" aria-label="Switch language · تغيير اللغة"><span class="en">العربية</span><span class="ar">English</span></button>
   </header>
 
   <main>
-  <div class="hero">
+  <section class="hero">
     <div>
-      <span class="pill"><span class="en">Live-selling marketplace</span><span class="ar">سوق البيع المباشر</span></span>
-      <h1><span class="en">Shop live. <em>Bid. Buy.</em> Saudi Arabia.</span><span class="ar">تسوّق مباشرة. <em>زايد. اشترِ.</em> من السعودية.</span></h1>
-      <p class="lead"><span class="en">Watch sellers go live, see the product in action, and buy it right there. Casho brings the trust of a real shop to your phone.</span><span class="ar">شاهد البائعين في بث مباشر، وشاهد المنتج أمامك، واشترِه في نفس اللحظة. كاشو يجمع ثقة المتجر الحقيقي في جوالك.</span></p>
-      <div class="cta">
-        <span class="btn primary" aria-disabled="true"><span class="en">Coming soon on the App Store</span><span class="ar">قريباً على آب ستور</span></span>
-        <a class="btn ghost" href="#how"><span class="en">How it works</span><span class="ar">كيف يعمل</span></a>
+      <span class="pill"><span class="dot"></span><span class="en">Live marketplace · Saudi Arabia</span><span class="ar">سوق مباشر · السعودية</span></span>
+      <h1 id="h1"><span class="en"><span class="w" style="--i:0">Shop</span> <span class="w g" style="--i:1">live.</span><br><span class="w" style="--i:2">Bid.</span> <span class="w g" style="--i:3">Buy.</span></span><span class="ar"><span class="w" style="--i:0">تسوّق</span> <span class="w g" style="--i:1">مباشرة.</span><br><span class="w" style="--i:2">زايد.</span> <span class="w g" style="--i:3">اشترِ.</span></span></h1>
+      <p class="lead"><span class="en">The seller goes live. You see the real product, ask anything, and buy it in one tap. No guessing. No waiting.</span><span class="ar">البائع يبث مباشرة. تشوف المنتج الحقيقي، وتسأل عن أي شي، وتشتريه بلمسة. بدون تخمين وبدون انتظار.</span></p>
+      <div class="cta"><span class="btn p" aria-disabled="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg><span class="en">Soon in the App Store</span><span class="ar">قريباً على آب ستور</span></span><a class="btn g" href="#story"><span class="en">See how it works</span><span class="ar">شوف كيف يعمل</span></a></div>
+      <p class="note"><span class="en">iPhone first. Android right after.</span><span class="ar">الآيفون أولاً، وبعده أندرويد.</span></p>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="glow"></div>
+      <div class="phone" id="tilt">
+        <div class="scr" style="opacity:1">
+          <div class="vid"></div>
+          <div class="live-top"><span class="live-tag"><b></b>LIVE</span><span class="host"><img src="assets/icon.png" alt="" width="24" height="24"><span class="en">Your seller</span><span class="ar">بائعك</span></span></div>
+          <div class="hearts" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7.500-4.600-9.500-9.500C1 7.500 4 4 7.500 4c2 0 3.500 1 4.500 2.500C13 5 14.500 4 16.500 4 20 4 23 7.500 21.500 11.500 19.500 16.400 12 21 12 21z"/></svg><svg viewBox="0 0 24 24"><path d="M12 21s-7.500-4.600-9.500-9.500C1 7.500 4 4 7.500 4c2 0 3.500 1 4.500 2.500C13 5 14.500 4 16.500 4 20 4 23 7.500 21.500 11.500 19.500 16.400 12 21 12 21z"/></svg><svg viewBox="0 0 24 24"><path d="M12 21s-7.500-4.600-9.500-9.500C1 7.500 4 4 7.500 4c2 0 3.500 1 4.500 2.500C13 5 14.500 4 16.500 4 20 4 23 7.500 21.500 11.500 19.500 16.400 12 21 12 21z"/></svg></div>
+          <div class="chat"><div class="msg"><b>Sara</b><span class="en">Is it original?</span><span class="ar">هل هو أصلي؟</span></div><div class="msg"><b>Fahad</b><span class="en">What is the size?</span><span class="ar">كم المقاس؟</span></div><div class="msg"><b>Nora</b><span class="en">I want one!</span><span class="ar">أبغى واحد!</span></div><div class="msg"><b>Khalid</b><span class="en">Sent. Paid.</span><span class="ar">تم الدفع.</span></div></div>
+          <div class="buy"><i class="th"></i><div><strong><span class="en">Smart watch</span><span class="ar">ساعة ذكية</span></strong><span>600.00 SAR</span></div><em><span class="en">Buy</span><span class="ar">اشترِ</span></em></div>
+        </div>
       </div>
-      <p class="note"><span class="en">Launching first on iPhone. Android follows.</span><span class="ar">نبدأ بالآيفون أولاً، ثم أندرويد.</span></p>
+      <div class="chip c1"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span><span class="en">Order confirmed</span><span class="ar">تم تأكيد الطلب</span><small><span class="en">Paid securely</span><span class="ar">دفع آمن</span></small></span></div>
+      <div class="chip c2"><svg viewBox="0 0 24 24"><path d="M4 18l6-6 4 4 6-8"/><path d="M15 8h5v5"/></svg><span><span class="en">New bid</span><span class="ar">مزايدة جديدة</span><small>+ 500 SAR</small></span></div>
+      <div class="chip c3"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.500-3 8-7 10-4-2-7-5.500-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span><span class="en">Verified seller</span><span class="ar">بائع موثّق</span><small><span class="en">Checked before selling</span><span class="ar">نتحقق قبل البيع</span></small></span></div>
     </div>
-    <div class="phones" aria-hidden="false">
-      <div class="phone a"><img src="assets/shot-shop.jpg" width="460" height="1000" alt="Casho shop screen with products and prices"></div>
-      <div class="phone b"><img src="assets/shot-explore.jpg" width="460" height="1000" alt="Casho explore screen with videos and live shows"></div>
-    </div>
-  </div>
+  </section>
   </main>
 </div>
 
-<section class="light" id="how">
-  <div class="wrap">
-    <h2 class="rise"><span class="en">Shopping that feels real</span><span class="ar">تسوّق تحسّه حقيقي</span></h2>
-    <p class="sub rise"><span class="en">Three steps, no guessing about what you are buying.</span><span class="ar">ثلاث خطوات، ولا تخمين في اللي تشتريه.</span></p>
+<div class="marq" aria-hidden="true"><div class="track">
+  <span class="en">Phones</span><span class="en">TVs</span><span class="en">Appliances</span><span class="en">Fashion</span><span class="en">Beauty</span><span class="en">Vehicles</span><span class="en">Properties</span><span class="en">Gifts</span>
+  <span class="en">Phones</span><span class="en">TVs</span><span class="en">Appliances</span><span class="en">Fashion</span><span class="en">Beauty</span><span class="en">Vehicles</span><span class="en">Properties</span><span class="en">Gifts</span>
+  <span class="ar">جوالات</span><span class="ar">تلفزيونات</span><span class="ar">أجهزة منزلية</span><span class="ar">أزياء</span><span class="ar">جمال</span><span class="ar">سيارات</span><span class="ar">عقارات</span><span class="ar">هدايا</span>
+  <span class="ar">جوالات</span><span class="ar">تلفزيونات</span><span class="ar">أجهزة منزلية</span><span class="ar">أزياء</span><span class="ar">جمال</span><span class="ar">سيارات</span><span class="ar">عقارات</span><span class="ar">هدايا</span>
+</div></div>
+
+<section class="story" id="story"><div class="wrap">
+  <h2 class="rise"><span class="en">A shop that talks back.</span><span class="ar">متجر يرد عليك.</span></h2>
+  <p class="sub rise"><span class="en">Scroll. Watch the app work.</span><span class="ar">انزل وشوف التطبيق يشتغل.</span></p>
+  <div class="sgrid">
     <div class="steps">
-      <div class="step rise"><h3><span class="en">Watch</span><span class="ar">شاهد</span></h3><p><span class="en">Join a live show or scroll short videos from sellers across the Kingdom.</span><span class="ar">ادخل بث مباشر أو تصفّح فيديوهات قصيرة من بائعين في أنحاء المملكة.</span></p></div>
-      <div class="step rise"><h3><span class="en">Ask</span><span class="ar">اسأل</span></h3><p><span class="en">Chat with the seller while they show you the item and answer your questions.</span><span class="ar">تحدّث مع البائع وهو يعرض لك المنتج ويجاوب على أسئلتك.</span></p></div>
-      <div class="step rise"><h3><span class="en">Buy</span><span class="ar">اشترِ</span></h3><p><span class="en">Tap Buy, pay securely, and follow your order until it arrives.</span><span class="ar">اضغط اشترِ، وادفع بأمان، وتابع طلبك حتى يوصلك.</span></p></div>
+      <div class="step on" data-s="1"><div class="n">01</div><h3><span class="en">Watch it live</span><span class="ar">شاهده مباشرة</span></h3><p><span class="en">See the real item, up close, shown by a real person.</span><span class="ar">شوف المنتج الحقيقي عن قرب، يعرضه لك شخص حقيقي.</span></p></div>
+      <div class="step" data-s="2"><div class="n">02</div><h3><span class="en">Ask anything</span><span class="ar">اسأل عن أي شي</span></h3><p><span class="en">Chat with the seller while the show runs. Answers come in seconds.</span><span class="ar">تحدّث مع البائع أثناء البث. الإجابة تجيك في ثواني.</span></p></div>
+      <div class="step" data-s="3"><div class="n">03</div><h3><span class="en">Explore the shop</span><span class="ar">تصفّح المتجر</span></h3><p><span class="en">Browse phones, TVs, home appliances and more. Search, filter and buy anything, any time, not only during a live.</span><span class="ar">تصفّح الجوالات والتلفزيونات والأجهزة المنزلية وغيرها. ابحث وفلتر واشترِ أي شي وقت ما تبغى، مو بس أثناء البث.</span></p></div>
+      <div class="step" data-s="4"><div class="n">04</div><h3><span class="en">Buy in one tap</span><span class="ar">اشترِ بلمسة</span></h3><p><span class="en">Pay inside the app, then follow your order until it is at your door.</span><span class="ar">ادفع داخل التطبيق، وتابع طلبك لين يوصل باب بيتك.</span></p></div>
+    </div>
+    <div class="sticky" id="sticky" data-step="1">
+      <div class="phone">
+        <div class="scr s1"><div class="vid"></div><div class="live-top"><span class="live-tag"><b></b>LIVE</span></div><div class="buy"><i class="th"></i><div><strong><span class="en">Smart watch</span><span class="ar">ساعة ذكية</span></strong><span>600.00 SAR</span></div><em><span class="en">Buy</span><span class="ar">اشترِ</span></em></div></div>
+        <div class="scr s2"><div class="vid"></div><div class="chatbig" style="position:relative;z-index:3"><div class="bub"><span class="en">Is it original?</span><span class="ar">هل هو أصلي؟</span></div><div class="bub me"><span class="en">Yes, sealed box, one year warranty.</span><span class="ar">نعم، علبة مغلقة وضمان سنة.</span></div><div class="bub"><span class="en">Can it arrive by Friday?</span><span class="ar">يوصل قبل الجمعة؟</span></div><div class="bub me"><span class="en">Yes, shipping tomorrow.</span><span class="ar">نعم، الشحن بكرة.</span></div></div></div>
+        <div class="scr s3"><div class="shopm"><b class="sh"><span class="en">Shop</span><span class="ar">المتجر</span></b><div class="chp"><i class="on"><span class="en">All</span><span class="ar">الكل</span></i><i><span class="en">Phones</span><span class="ar">جوالات</span></i><i><span class="en">TVs</span><span class="ar">تلفزيونات</span></i><i><span class="en">Home</span><span class="ar">المنزل</span></i></div><div class="pg"><div class="pc"><u style="background:linear-gradient(135deg,#ffe9b8,#bfa060)"></u><span><span class="en">Smart watch</span><span class="ar">ساعة ذكية</span></span><em>600 SAR</em></div><div class="pc"><u style="background:linear-gradient(135deg,#8fd3c0,#188B67)"></u><span><span class="en">Phone</span><span class="ar">جوال</span></span><em>2,400 SAR</em></div><div class="pc"><u style="background:linear-gradient(135deg,#9fb4ff,#3b4a9c)"></u><span><span class="en">TV</span><span class="ar">تلفزيون</span></span><em>1,800 SAR</em></div><div class="pc"><u style="background:linear-gradient(135deg,#f3f3f3,#a8b4ba)"></u><span><span class="en">Washer</span><span class="ar">غسالة</span></span><em>1,300 SAR</em></div><div class="pc"><u style="background:linear-gradient(135deg,#ffc2a8,#d96a3c)"></u><span><span class="en">Headphones</span><span class="ar">سماعات</span></span><em>450 SAR</em></div><div class="pc"><u style="background:linear-gradient(135deg,#c9c9d6,#5a5a78)"></u><span><span class="en">Laptop</span><span class="ar">لابتوب</span></span><em>3,900 SAR</em></div></div></div></div>
+        <div class="scr s4"><div class="co"><div class="it"><i class="th"></i><div><strong style="color:#fff"><span class="en">Smart watch</span><span class="ar">ساعة ذكية</span></strong><br><span style="color:#b9cdc2">600.00 SAR</span></div></div><div class="rw"><span><span class="en">Delivery</span><span class="ar">التوصيل</span></span><b><span class="en">Riyadh</span><span class="ar">الرياض</span></b></div><div class="rw"><span><span class="en">Payment</span><span class="ar">الدفع</span></span><b><span class="en">Card</span><span class="ar">بطاقة</span></b></div><div class="pay"><span class="en">Pay 600.00 SAR</span><span class="ar">ادفع 600.00 ريال</span></div><div class="ok"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div><div style="color:#fff;font-weight:800"><span class="en">Order confirmed</span><span class="ar">تم تأكيد الطلب</span></div></div></div>
+      </div>
+      <div class="cap" id="cap" aria-live="polite"></div>
     </div>
   </div>
-</section>
+</div></section>
 
-<section>
-  <div class="wrap">
-    <h2 class="rise"><span class="en">Everything in one app</span><span class="ar">كل شي في تطبيق واحد</span></h2>
-    <p class="sub rise"><span class="en">Built for Saudi shoppers and sellers, in Arabic and English.</span><span class="ar">مصمم للمتسوق والبائع في السعودية، بالعربي والإنجليزي.</span></p>
-    <div class="grid">
-      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="M16 10l5-3v10l-5-3"/></svg></div><h3><span class="en">Live shows</span><span class="ar">بث مباشر</span></h3><p><span class="en">Sellers go live and sell as they show. Pick from their list and buy in seconds.</span><span class="ar">البائع يبث ويبيع وهو يعرض. اختر من قائمته واشترِ في ثواني.</span></p></div>
-      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></div><h3><span class="en">Short videos</span><span class="ar">فيديوهات قصيرة</span></h3><p><span class="en">A For You feed of real products, with a Buy button on every video.</span><span class="ar">صفحة «لك» بمنتجات حقيقية، وزر شراء على كل فيديو.</span></p></div>
-      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16l1.5-5.5A2 2 0 018.400 9h7.200a2 2 0 011.900 1.500L19 16"/><rect x="3" y="16" width="18" height="4" rx="1.500"/><circle cx="7.500" cy="18" r=".5"/><circle cx="16.500" cy="18" r=".5"/></svg></div><h3><span class="en">Vehicles, properties and auctions</span><span class="ar">سيارات وعقارات ومزادات</span></h3><p><span class="en">Browse cars, bikes, apartments and villas from verified sellers, and bid in live auctions.</span><span class="ar">تصفّح سيارات ودراجات وشقق وفلل من بائعين موثّقين، وزايد في مزادات مباشرة.</span></p></div>
-      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.500-3 8-7 10-4-2-7-5.500-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3><span class="en">Verified sellers</span><span class="ar">بائعون موثّقون</span></h3><p><span class="en">Sellers are checked before they can sell, and you can report anything that looks wrong.</span><span class="ar">نتحقق من البائعين قبل أن يبيعوا، وتقدر تبلّغ عن أي شي مريب.</span></p></div>
-      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M3 10h18M7 15h3"/></svg></div><h3><span class="en">Secure payments</span><span class="ar">دفع آمن</span></h3><p><span class="en">Pay inside the app. Your card details never reach the seller.</span><span class="ar">ادفع داخل التطبيق. بيانات بطاقتك ما توصل للبائع أبداً.</span></p></div>
-      <div class="card rise"><div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div><h3><span class="en">Track every order</span><span class="ar">تابع كل طلب</span></h3><p><span class="en">See each order from payment to delivery, and chat with the seller about it.</span><span class="ar">تابع كل طلب من الدفع إلى التوصيل، وتحدّث مع البائع عنه.</span></p></div>
-    </div>
+<section class="bento"><div class="wrap">
+  <h2 class="rise"><span class="en">Everything, one app.</span><span class="ar">كل شي، في تطبيق واحد.</span></h2>
+  <p class="sub rise"><span class="en">Built for Saudi shoppers and sellers. Arabic and English, both first class.</span><span class="ar">مصمم للمتسوق والبائع في السعودية. عربي وإنجليزي، كلاهما بنفس الاهتمام.</span></p>
+  <div class="bgrid">
+    <div class="cardx x rise"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="M16 10l5-3v10l-5-3"/></svg><h3><span class="en">Live shows</span><span class="ar">بث مباشر</span></h3><p><span class="en">Sellers go live from their phone and sell as they show. Pick from their list and buy in seconds.</span><span class="ar">البائع يبث من جواله ويبيع وهو يعرض. اختر من قائمته واشترِ في ثواني.</span></p></div>
+    <div class="cardx rise"><div class="big">24/7</div><h3><span class="en">Always something live</span><span class="ar">دائماً في شي مباشر</span></h3><p><span class="en">Short videos fill the gaps between shows.</span><span class="ar">الفيديوهات القصيرة تملأ ما بين البثوث.</span></p></div>
+    <div class="cardx w rise"><svg class="i" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2.500"/><path d="M11 18h2"/></svg><h3><span class="en">Any item you can think of</span><span class="ar">أي منتج تتخيله</span></h3><p><span class="en">Phones, smart gadgets, TVs, washing machines, fashion, beauty, home and gifts. If it can be sold, it can be shown live.</span><span class="ar">جوالات وأجهزة ذكية وتلفزيونات وغسالات وأزياء وجمال ومنزل وهدايا. أي شي يُباع، يُعرض مباشرة.</span></p></div>
+    <div class="cardx w rise"><svg class="i" viewBox="0 0 24 24"><path d="M5 16l1.500-5.500A2 2 0 018.400 9h7.200a2 2 0 011.900 1.500L19 16"/><rect x="3" y="16" width="18" height="4" rx="1.500"/></svg><h3><span class="en">Vehicles, properties, auctions</span><span class="ar">سيارات وعقارات ومزادات</span></h3><p><span class="en">Cars, bikes, apartments and villas from verified sellers, and live bidding.</span><span class="ar">سيارات ودراجات وشقق وفلل من بائعين موثّقين، ومزايدة مباشرة.</span></p></div>
+    <div class="cardx w rise"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.500-3 8-7 10-4-2-7-5.500-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><h3><span class="en">Verified sellers</span><span class="ar">بائعون موثّقون</span></h3><p><span class="en">Sellers are checked before they sell. See something wrong? Report it in one tap.</span><span class="ar">نتحقق من البائعين قبل أن يبيعوا. شفت شي غلط؟ بلّغ بلمسة.</span></p></div>
+    <div class="cardx w rise"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M3 10h18M7 15h3"/></svg><h3><span class="en">Secure payments</span><span class="ar">دفع آمن</span></h3><p><span class="en">You pay inside the app. Your card details never reach the seller.</span><span class="ar">تدفع داخل التطبيق. بيانات بطاقتك ما توصل للبائع.</span></p></div>
+    <div class="cardx f rise"><svg class="i" viewBox="0 0 24 24"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><h3><span class="en">Track every order</span><span class="ar">تابع كل طلب</span></h3><p><span class="en">From payment to delivery, with a chat open to the seller.</span><span class="ar">من الدفع إلى التوصيل، مع محادثة مفتوحة مع البائع.</span></p></div>
   </div>
-</section>
+</div></section>
 
-<section class="light">
-  <div class="wrap sell">
-    <div>
-      <h2 class="rise"><span class="en">Sell on Casho</span><span class="ar">بِع على كاشو</span></h2>
-      <ul class="rise">
-        <li><span class="en">Open a live show from your phone, no extra equipment.</span><span class="ar">افتح بث مباشر من جوالك، بدون معدات إضافية.</span></li>
-        <li><span class="en">Add your products once, show them in any live.</span><span class="ar">أضف منتجاتك مرة واحدة واعرضها في أي بث.</span></li>
-        <li><span class="en">Get paid to your bank account, and manage orders in one place.</span><span class="ar">استلم أرباحك في حسابك البنكي، وأدر طلباتك من مكان واحد.</span></li>
-      </ul>
-    </div>
-    <div class="badge-box rise"><strong>Casho · كاشو</strong><p style="margin:10px 0 0"><span class="en">Made in Saudi Arabia, for Saudi Arabia.</span><span class="ar">صُنع في السعودية، للسعودية.</span></p></div>
-  </div>
-</section>
+<section class="sellx"><div class="wrap"><div class="panel rise">
+  <div><h2><span class="en">Sell on Casho.</span><span class="ar">بِع على كاشو.</span></h2>
+    <ul><li><span class="en">Go live from your phone. No extra equipment.</span><span class="ar">ابدأ بث من جوالك. بدون معدات إضافية.</span></li><li><span class="en">Add your products once, show them in any live.</span><span class="ar">أضف منتجاتك مرة واحدة واعرضها في أي بث.</span></li><li><span class="en">Get paid to your bank account. Manage orders in one place.</span><span class="ar">استلم أرباحك في حسابك البنكي. أدر طلباتك من مكان واحد.</span></li></ul></div>
+  <div class="emblem"><img src="assets/icon.png" alt="Casho" width="512" height="512"></div>
+</div></div></section>
 
-<section class="final">
-  <div class="wrap">
-    <h2 class="rise"><span class="en">Be first when we open</span><span class="ar">كن أول من يجرّب</span></h2>
-    <p class="sub rise" style="margin-inline:auto"><span class="en">Casho is coming to the App Store soon. Questions? We reply fast.</span><span class="ar">كاشو قادم قريباً على آب ستور. عندك سؤال؟ نرد بسرعة.</span></p>
-    <div class="cta rise"><a class="btn primary" href="mailto:support@appcasho.com"><span class="en">Contact us</span><span class="ar">تواصل معنا</span></a><a class="btn ghost" href="support.html"><span class="en">Support</span><span class="ar">الدعم</span></a></div>
-  </div>
-</section>
+<section class="final"><div class="wrap">
+  <div class="mega" aria-hidden="true"><span class="en">Casho</span><span class="ar">كاشو</span></div>
+  <h2 class="rise"><span class="en">Be first through the door.</span><span class="ar">كن أول من يدخل.</span></h2>
+  <p class="sub rise" style="margin-inline:auto"><span class="en">Casho is coming to the App Store soon. Questions? We reply fast.</span><span class="ar">كاشو قادم قريباً على آب ستور. عندك سؤال؟ نرد بسرعة.</span></p>
+  <div class="cta rise"><a class="btn p" href="mailto:support@appcasho.com"><span class="en">Contact us</span><span class="ar">تواصل معنا</span></a><a class="btn g" href="support.html"><span class="en">Support</span><span class="ar">الدعم</span></a></div>
+</div></section>
 
-<footer>
-  <div class="wrap">
-    <div>© <span id="yr">2026</span> Casho · كاشو — <span class="en">from Mrsam</span><span class="ar">من مرسم</span></div>
-    <nav aria-label="Legal"><a href="support.html"><span class="en">Support</span><span class="ar">الدعم</span></a><a href="terms.html"><span class="en">Terms of Use</span><span class="ar">شروط الاستخدام</span></a><a href="privacy.html"><span class="en">Privacy Policy</span><span class="ar">سياسة الخصوصية</span></a></nav>
-  </div>
-</footer>
+<footer><div class="wrap">
+  <div>© <span id="yr">2026</span> Casho · كاشو — <span class="en">from Mrsam</span><span class="ar">من مرسم</span></div>
+  <nav aria-label="Legal"><a href="support.html"><span class="en">Support</span><span class="ar">الدعم</span></a><a href="terms.html"><span class="en">Terms of Use</span><span class="ar">شروط الاستخدام</span></a><a href="privacy.html"><span class="en">Privacy Policy</span><span class="ar">سياسة الخصوصية</span></a></nav>
+</div></footer>
 
 <script>
 (function () {
-  var h = document.documentElement, key = "casho_lang";
+  var h = document.documentElement, key = "casho_lang", reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
   function set(l) { h.lang = l; h.dir = l === "ar" ? "rtl" : "ltr"; try { localStorage.setItem(key, l); } catch (e) {} }
   var saved = null; try { saved = localStorage.getItem(key); } catch (e) {}
   set(saved || ((navigator.language || "").slice(0, 2) === "ar" ? "ar" : "en"));
   document.getElementById("lang").addEventListener("click", function () { set(h.lang === "ar" ? "en" : "ar"); });
   document.getElementById("yr").textContent = new Date().getFullYear();
-  var els = document.querySelectorAll(".rise");
-  if ("IntersectionObserver" in window) {
+
+  // reveal on scroll
+  var rise = document.querySelectorAll(".rise");
+  if ("IntersectionObserver" in window && !reduce) {
     var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }); }, { threshold: .15 });
-    els.forEach(function (el) { io.observe(el); });
-  } else { els.forEach(function (el) { el.classList.add("in"); }); }
+    rise.forEach(function (el) { io.observe(el); });
+  } else rise.forEach(function (el) { el.classList.add("in"); });
+
+  // the sticky phone follows the story step in view
+  var sticky = document.getElementById("sticky"), cap = document.getElementById("cap"), steps = document.querySelectorAll(".step");
+  if (steps[0]) cap.innerHTML = steps[0].innerHTML;
+  if ("IntersectionObserver" in window) {
+    var so = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { steps.forEach(function (s) { s.classList.toggle("on", s === e.target); }); sticky.dataset.step = e.target.dataset.s; cap.innerHTML = e.target.innerHTML; } }); }, { rootMargin: matchMedia("(max-width:900px)").matches ? "-52% 0px -28% 0px" : "-45% 0px -45% 0px" });
+    steps.forEach(function (s) { so.observe(s); });
+  }
+
+  // phone follows the pointer a little, and cards get a soft spotlight
+  var tilt = document.getElementById("tilt"), stage = document.getElementById("stage");
+  if (!reduce && matchMedia("(hover:hover)").matches) {
+    stage.addEventListener("pointermove", function (e) { var r = stage.getBoundingClientRect(); var x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; tilt.style.setProperty("--ry", (-14 + x * 16) + "deg"); tilt.style.setProperty("--rx", (6 - y * 12) + "deg"); });
+    stage.addEventListener("pointerleave", function () { tilt.style.removeProperty("--ry"); tilt.style.removeProperty("--rx"); });
+    document.querySelectorAll(".cardx").forEach(function (c) { c.addEventListener("pointermove", function (e) { var r = c.getBoundingClientRect(); c.style.setProperty("--mx", (e.clientX - r.left) + "px"); c.style.setProperty("--my", (e.clientY - r.top) + "px"); }); });
+  }
 })();
 </script>
 </body>
