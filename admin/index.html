@@ -254,7 +254,7 @@ const TABS = {
     v.append(
       el("h3", {}, "Your profit"),
       card("Commission earned (completed orders)", sar(m.commission_earned), "The 15% you keep. Counted only when the claim window is over and the sale is final.", "ok"),
-      card("Estimated Moyasar fees (worst case)", sar(m.est_fees), "About 2.5% + 1 SAR per payment. The real fees are in your Moyasar dashboard."),
+      card("Estimated Moyasar fees (worst case)", sar(m.est_fees), "Worst case from your Moyasar offer: 2.74% + 1 SAR per payment + 1 SAR per refund (Mada is only 0.99%). The real fees are in your Moyasar dashboard."),
       card("Estimated profit", sar(m.commission_earned - m.est_fees), "Commission minus the fee estimate. Before your other costs (AWS, Supabase, etc).", "ok"),
       card("Coming later (orders still in progress)", sar(m.commission_pending), "Commission on orders not final yet. Could still be refunded."),
       el("h3", {}, "Seller money"),
@@ -265,6 +265,51 @@ const TABS = {
       card("Collected from buyers (all time)", sar(m.collected), "Everything buyers paid through Moyasar, including refunded orders."),
       card("Refunded to buyers", sar(m.refunded), m.refund_waiting ? `Plus ${sar(m.refund_waiting)} waiting to be refunded (Claims tab, Process waiting refunds).` : "Nothing waiting."),
       card("Held for orders in progress", sar(m.held_in_progress), "Paid but not final yet: waiting to ship, in delivery, or inside the claim window. Not yours and not the seller's yet."));
+  },
+
+  async Dashboard(v) {
+    const d = await call("admin", { action: "dashboard" });
+    const sar = (h) => (h / 100).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " SAR";
+    const tile = (t, val, help, cls = "") => el("div", { class: "card" }, el("div", { class: "mut" }, t), el("b", { class: cls, style: "font-size:22px" }, String(val)), el("div", { class: "mut" }, help));
+    v.append(el("h3", {}, "People"),
+      tile("Users", d.users, `${d.users_week} joined in the last 7 days`),
+      tile("Sellers", d.sellers, "Accounts that finished seller sign-up"),
+      el("h3", {}, "Marketplace"),
+      tile("Products", d.products, "All products created"),
+      tile("Lives", d.lives, `${d.lives_now} live right now`),
+      tile("Paid orders", d.orders_paid, "Paid, not refunded"),
+      el("h3", {}, "Money"),
+      tile("Revenue", sar(d.revenue), `Paid by buyers, minus refunds. ${sar(d.revenue_today)} in the last 24 hours.`),
+      tile("Refunded", sar(d.refunded), "Refunded or waiting to be refunded"),
+      tile("Casho income (commission)", sar(d.commission), "Only completed orders: the commission is final"),
+      tile("Cost (estimated card fees)", sar(d.fees), "Moyasar worst case: 2.74% + 1 SAR per payment + 1 SAR per refund (Mada is cheaper, VAT not included)"),
+      tile("Profit", sar(d.profit), "Commission minus card fees", d.profit < 0 ? "bad" : "ok"),
+      el("h3", {}, "Needs you"),
+      tile("Open support tickets", d.tickets_open, "Tickets tab"),
+      tile("New suggestions", d.suggestions_new, `${d.suggestions_problem} of them are problems. Suggestions tab`),
+      tile("Open user reports", d.reports_open, "Reports tab"),
+      tile("Verification requests waiting", d.verif_pending, "Badges tab"));
+  },
+
+  async Tickets(v) {
+    const sel = el("select", {}, el("option", { value: "open" }, "Open"), el("option", { value: "closed" }, "Closed"), el("option", { value: "" }, "All"));
+    sel.value = window.ticketFilter ?? "open";
+    sel.onchange = () => { window.ticketFilter = sel.value; show("Tickets"); };
+    const { tickets } = await call("admin", { action: "tickets", status: sel.value || undefined });
+    v.append(el("div", { class: "row" }, sel, el("span", { class: "mut" }, `${tickets.length} shown (latest 200)`)));
+    if (!tickets.length) v.append(el("p", { class: "mut" }, "Nothing here."));
+    for (const t of tickets) {
+      const reply = el("textarea", { rows: "3", style: "width:100%", placeholder: "Reply to the customer (they see it in the app). Sending closes the ticket." }, t.admin_reply || "");
+      v.append(el("div", { class: "card" },
+        el("b", {}, `${t.topic} · ${t.status}`),
+        el("div", { class: "mut" }, `${when(t.created_at)} · ${t.name || "?"} (@${t.username || "?"})`),
+        el("div", { dir: "auto", style: "white-space:pre-wrap;margin:6px 0" }, t.body),
+        reply,
+        el("div", { class: "row" },
+          el("button", { class: "primary", onclick: () => reply.value.trim() ? act("admin", { action: "ticket_reply", id: t.id, reply: reply.value }, "Reply sent, ticket closed") : alert("Write a reply first") }, "Send reply and close"),
+          t.status === "open" ? el("button", { onclick: () => act("admin", { action: "ticket_status", id: t.id, status: "closed" }, "Closed") }, "Close without reply")
+                              : el("button", { onclick: () => act("admin", { action: "ticket_status", id: t.id, status: "open" }, "Reopened") }, "Reopen"))));
+    }
   },
 
   async Suggestions(v) {
@@ -646,11 +691,12 @@ $("go").onclick = async () => {
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
-  const names = Object.keys(TABS).filter((n) => me.owner || !["Money", "Team", "Payouts", "Referrals", "Promotions", "Email users", "Ads"].includes(n));
+  const first = ["Dashboard", "Tickets"];
+  const names = [...first, ...Object.keys(TABS).filter((n) => !first.includes(n))].filter((n) => me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals", "Promotions", "Email users", "Ads"].includes(n));
   say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except money, payouts and team).`, "ok");
   $("q").hidden = false;
   const nav = $("tabs"); nav.hidden = false; nav.replaceChildren(...names.map((n) => el("button", { onclick: () => show(n) }, n)));
-  show("Claims");
+  show(me.owner ? "Dashboard" : "Claims");
 };
 $("secret").addEventListener("keydown", (e) => { if (e.key === "Enter") $("go").click(); });
 </script>
