@@ -191,7 +191,7 @@ const TABS = {
           ? el("div", { class: "row" }, el("span", { class: "mut" }, "Buyer's photos:"), ...c.photo_urls.map((u) => el("a", { href: u, target: "_blank", rel: "noopener" }, el("img", { src: u, style: "height:90px;margin-right:6px;border-radius:6px;border:1px solid #444" }))))
           : el("div", { class: "mut" }, c.reason === "not_delivered" ? "No photo (the parcel never arrived)." : "No photo."),
         el("div", { class: "mut" }, `Carrier: ${o.carrier || "?"} · tracking: ${o.tracking_number || "?"} · `, link(c.proof_url, "shipping proof photo")),
-        (c.messages || []).length ? el("div", { class: "mut" }, el("b", {}, "Order messages:"), ...c.messages.map((m) => el("div", { dir: "auto" }, `${m.who}: ${m.body}`))) : el("div", { class: "mut" }, "No messages between buyer and seller."),
+        (c.messages || []).length ? el("div", { class: "mut" }, el("b", {}, "Order messages:"), ...c.messages.map((m) => el("div", { dir: "auto" }, `${m.who}: ${m.body}`, m.image ? el("a", { href: m.image, target: "_blank", rel: "noopener" }, " [picture]") : null))) : el("div", { class: "mut" }, "No messages between buyer and seller."),
         c.status === "refunded" || c.status === "rejected"
           ? el("div", { class: "row" }, el("b", {}, c.status === "refunded" ? "Final: the buyer was refunded." : "Final: the claim was rejected (or the time to return the item ran out)."))
           : c.status === "approved"
@@ -211,7 +211,7 @@ const TABS = {
     const { reports } = await call("admin", { action: "reports" });
     v.append(el("p", { class: "mut" }, "Reports from users. Reply to serious ones within 24 hours (Apple expects fast action on abusive content)."));
     if (!reports.length) v.append(el("p", {}, "No open reports."));
-    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a video comment", product: "a product", vehicle: "a vehicle listing", property: "a property listing", property_message: "a property chat message", vehicle_message: "a vehicle chat message" };
+    const label = { seller: "a seller", live: "a live", message: "a live chat message", order_message: "an order message", video: "a product video", review: "a review", comment: "a comment", product: "a product", vehicle: "a vehicle listing", property: "a property listing", property_message: "a property chat message", vehicle_message: "a vehicle chat message" };
     for (const r of reports) {
       const who = `${r.seller_name} (@${r.seller_username})`;
       v.append(el("div", { class: "card" },
