@@ -109,6 +109,59 @@ function applyFilter() {
 
 function link(url, text) { return url ? el("a", { href: url, target: "_blank", rel: "noopener" }, text) : el("span", { class: "mut" }, "no photo"); }
 
+// ---- Dashboard > Accounting: the CSV for the accountant + costs and income typed in by hand (owner only) ----
+async function accountingBlock() {
+  const sar = (h) => (h / 100).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const today = new Date(), first = new Date(today.getFullYear(), today.getMonth(), 1);
+  const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const from = el("input", { type: "date", value: iso(first) }), to = el("input", { type: "date", value: iso(today) });
+  const out = el("div", { class: "mut" });
+  const run = async (download) => {
+    try {
+      const j = await call("admin", { action: "accounting_export", from: from.value, to: to.value });
+      out.replaceChildren(el("div", {}, `${j.rows} lines. Revenue ${sar(j.totals.revenue)} SAR · Costs ${sar(j.totals.cost)} SAR · Profit ${sar(j.profit)} SAR · Cash in ${sar(j.totals.cash_in)} · Cash out ${sar(j.totals.cash_out)} · Owed to sellers ${sar(j.totals.liability)} (in SAR)`));
+      if (download) {
+        const a = el("a", { href: URL.createObjectURL(new Blob([j.csv], { type: "text/csv;charset=utf-8" })), download: `casho-accounting-${from.value}_to_${to.value}.csv` });
+        document.body.append(a); a.click(); a.remove();
+      }
+    } catch (e) { say(String(e.message || e), "bad"); }
+  };
+  const range = (label, f, t) => el("button", { onclick: () => { from.value = iso(f); to.value = iso(t); } }, label);
+  const y = today.getFullYear(), m = today.getMonth();
+  const exportCard = el("div", { class: "card" },
+    el("div", { class: "mut" }, "One CSV with every money event from every source: orders, commission, refunds, seller payouts, card fees (estimate), discounts, influencers, listing fees, promotions, gifts, car deposits, withdrawal fees, and the costs you type in below. Opens in Excel."),
+    el("div", { class: "row" }, "From ", from, " To ", to),
+    el("div", { class: "row" }, range("This month", first, today), range("Last month", new Date(y, m - 1, 1), new Date(y, m, 0)), range("This year", new Date(y, 0, 1), today), range("All time", new Date(2026, 0, 1), today)),
+    el("div", { class: "row" }, el("button", { class: "primary", onclick: () => run(true) }, "Download CSV"), el("button", { onclick: () => run(false) }, "Show totals only")),
+    out);
+
+  // costs and other income the app cannot know
+  const cats = ["Software and hosting", "Payment provider", "Apple and Google fees", "Marketing and ads", "Influencers (other)", "Legal and professional", "Salaries and contractors", "Government and licences", "Shipping and packaging", "Bank fees", "Other"];
+  const f = { date: el("input", { type: "date", value: iso(today) }), kind: el("select", {}, el("option", { value: "cost" }, "Cost"), el("option", { value: "revenue" }, "Other income")),
+    category: el("select", {}, ...cats.map((c) => el("option", { value: c }, c))), vendor: el("input", { placeholder: "Vendor, e.g. Supabase, AWS, Cloudflare, Resend, Anthropic" }),
+    description: el("input", { placeholder: "What for, e.g. Pro plan November" }), amount: el("input", { type: "number", step: "0.01", min: "0", placeholder: "Amount in SAR" }), note: el("input", { placeholder: "Note (optional), e.g. invoice number" }) };
+  const list = el("div", {});
+  const load = async () => {
+    const { entries } = await call("admin", { action: "entry_list" });
+    list.replaceChildren(...(entries.length ? entries.map((e) => el("div", { class: "row" },
+      el("span", { class: "mut" }, `${e.entry_date} · ${e.kind === "cost" ? "Cost" : "Income"} · ${e.category}${e.vendor ? " · " + e.vendor : ""}${e.description ? " · " + e.description : ""}`),
+      el("b", {}, sar(e.amount_halalas) + " SAR"),
+      el("button", { onclick: async () => { if (confirm("Delete this line?")) { try { await call("admin", { action: "entry_delete", id: e.id }); say("Deleted", "ok"); load(); } catch (x) { say(String(x.message || x), "bad"); } } } }, "Delete"))) : [el("p", { class: "mut" }, "Nothing typed in yet.")]));
+  };
+  const add = async () => {
+    try {
+      await call("admin", { action: "entry_add", date: f.date.value, kind: f.kind.value, category: f.category.value, vendor: f.vendor.value, description: f.description.value, amount_sar: f.amount.value, note: f.note.value });
+      say("Added", "ok"); f.vendor.value = f.description.value = f.amount.value = f.note.value = ""; load();
+    } catch (e) { say(String(e.message || e), "bad"); }
+  };
+  await load().catch((e) => list.replaceChildren(el("p", { class: "mut" }, String(e.message || e))));
+  const entryCard = el("div", { class: "card" },
+    el("div", { class: "mut" }, "Type in what the app cannot know: provider invoices and other costs or income. They go into the CSV. Costs from Supabase, AWS, Cloudflare, Resend, Anthropic, Apple, your domain, the lawyer, salaries ..."),
+    el("div", { class: "row" }, f.date, f.kind, f.category), el("div", { class: "row" }, f.vendor, f.description), el("div", { class: "row" }, f.amount, f.note),
+    el("div", { class: "row" }, el("button", { class: "primary", onclick: add }, "Add line")), list);
+  return [el("h3", {}, "Accounting (for the accountant)"), exportCard, el("h3", {}, "Costs and income typed in"), entryCard];
+}
+
 const TABS = {
   async Claims(v) {
     const find = el("input", { placeholder: "Find a claim by order number (#A1B2C3D4 or full ID)", size: "34", value: window.claimQuery || "" });
@@ -283,12 +336,15 @@ const TABS = {
       tile("Refunded", sar(d.refunded), "Refunded or waiting to be refunded"),
       tile("Casho income (commission)", sar(d.commission), "Only completed orders: the commission is final"),
       tile("Cost (estimated card fees)", sar(d.fees), "Final orders only (completed or refunded). Worst case: 2.74% + 1 SAR per payment + 1 SAR per refund. Mada is cheaper, VAT not included"),
-      tile("Profit", sar(d.profit), "Commission minus card fees. Listing fees are not counted yet", d.profit < 0 ? "bad" : "ok"),
+      tile("Cost (buyer discounts)", sar(d.discounts), "Referral discounts on completed orders: Casho pays them out of its commission"),
+      tile("Cost (influencer share)", sar(d.influencers), "Influencers' share of the commission (owed + already paid)"),
+      tile("Profit", sar(d.profit), "Commission minus card fees, discounts and influencer share. Listing fees are not counted yet", d.profit < 0 ? "bad" : "ok"),
       el("h3", {}, "Needs you"),
       tile("Open support tickets", d.tickets_open, "Tickets tab"),
       tile("New suggestions", d.suggestions_new, `${d.suggestions_problem} of them are problems. Suggestions tab`),
       tile("Open user reports", d.reports_open, "Reports tab"),
-      tile("Verification requests waiting", d.verif_pending, "Badges tab"));
+      tile("Verification requests waiting", d.verif_pending, "Badges tab"),
+      ...(await accountingBlock()));
   },
 
   async Tickets(v) {
