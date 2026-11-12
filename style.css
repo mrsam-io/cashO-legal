@@ -19,3 +19,5 @@ nav { margin:14px 0 22px; padding-bottom:14px; border-bottom:2px solid var(--gol
 nav a { text-decoration:none; }
 section + section { margin-top:48px; padding-top:24px; border-top:1px solid var(--line); }
 @media (max-width:520px) { main { padding:4px 18px 28px; border-radius:18px; } }
+
+.lang { display:inline-block; padding:6px 16px; border:1.5px solid var(--gold); border-radius:999px; text-decoration:none; font-weight:700; font-size:14px; }
