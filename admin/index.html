@@ -33,7 +33,7 @@
 </style>
 </head>
 <body>
-<header class="brand"><img class="logo-light" src="https://appcasho.com/assets/logo-light.png" alt="Casho"><img class="logo-dark" src="https://appcasho.com/assets/logo-dark.png" alt="Casho"><span>Admin</span></header>
+<header class="brand"><img class="logo-light" src="https://appcasho.com/assets/logo-light.png" alt="Casho"><img class="logo-dark" src="https://appcasho.com/assets/logo-dark.png" alt="Casho"><span>Admin</span><button id="guideBtn" class="primary" style="margin-inline-start:auto" hidden>Guide</button></header>
 <div class="row">
   <input id="secret" type="password" placeholder="Admin secret" autocomplete="off" size="36">
   <button class="primary" id="go">Open</button>
@@ -759,11 +759,15 @@ $("go").onclick = async () => {
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
-  const first = ["Dashboard", "Tickets", "Guide"];
-  const names = [...first, ...Object.keys(TABS).filter((n) => !first.includes(n))].filter((n) => me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals"].includes(n));
+  const first = ["Dashboard", "Tickets"];
+  const names = [...first, ...Object.keys(TABS).filter((n) => !first.includes(n) && n !== "Guide")].filter((n) => me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals"].includes(n));
   say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except the money pages and team).`, "ok");
   $("q").hidden = false;
+  let before = null;   // the tab you were on, so the same button takes you back
+  const gb = $("guideBtn"); gb.hidden = false;
+  gb.onclick = () => { if (tab === "Guide") { show(before || (me.owner ? "Dashboard" : "Claims")); gb.textContent = "Guide"; } else { before = tab; show("Guide"); gb.textContent = "Back"; } };
   const nav = $("tabs"); nav.hidden = false; nav.replaceChildren(...names.map((n) => el("button", { onclick: () => show(n) }, n)));
+  nav.addEventListener("click", () => { gb.textContent = "Guide"; });   // a tab was chosen: the button offers the guide again
   show(me.owner ? "Dashboard" : "Claims");
 };
 $("secret").addEventListener("keydown", (e) => { if (e.key === "Enter") $("go").click(); });
