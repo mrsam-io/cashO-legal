@@ -187,6 +187,7 @@ const TABS = {
         el("div", { class: "mut" }, `Full order ID: ${o.id || "?"}`),
         el("div", {}, `Reason: ${c.reason} · opened ${when(c.created_at)} · status: ${c.status}`),
         el("div", { class: "mut" }, `Buyer's note: ${c.note || "(none)"}`),
+        el("div", { class: "mut" }, `Seller's answer: ${c.seller_reply || "(none yet)"}`),
         (c.photo_urls || []).length
           ? el("div", { class: "row" }, el("span", { class: "mut" }, "Buyer's photos:"), ...c.photo_urls.map((u) => el("a", { href: u, target: "_blank", rel: "noopener" }, el("img", { src: u, style: "height:90px;margin-right:6px;border-radius:6px;border:1px solid #444" }))))
           : el("div", { class: "mut" }, c.reason === "not_delivered" ? "No photo (the parcel never arrived)." : "No photo."),
