@@ -414,6 +414,12 @@ const TABS = {
   },
 
   async Products(v) {
+    if (isOwner) {   // 145: hidden Arabic/English search words for listings saved before step 2 (25 per press)
+      const out = el("span", { class: "mut" });
+      v.append(el("div", { class: "card" }, el("b", {}, "Search in Arabic and English"),
+        el("div", { class: "mut" }, "New listings get hidden search words in the other language by themselves. Press this to add them to older listings (25 per press, press again until 0 are left)."),
+        el("div", { class: "row" }, el("button", { class: "primary", onclick: async (e) => { e.target.disabled = true; out.textContent = " Working..."; try { const r = await call("admin", { action: "search_words_backfill" }); out.textContent = ` Done: ${r.done}. Left: ${r.left}.`; } catch (err) { out.textContent = " " + err.message; } e.target.disabled = false; } }, "Add search words to old listings"), out)));
+    }
     const find = el("input", { placeholder: "Find a product: title, @seller, or product number (#A1B2C3D4)", size: "36", value: window.productQuery || "" });
     const go = el("button", { onclick: () => { window.productQuery = find.value.trim(); show("Products"); } }, "Find");
     find.addEventListener("keydown", (e) => { if (e.key === "Enter") go.click(); });
