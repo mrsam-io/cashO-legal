@@ -18,6 +18,7 @@
   header.brand img { height:36px; width:auto; display:block; } header.brand .logo-dark { display:none; }
   @media (prefers-color-scheme: dark) { header.brand .logo-light { display:none; } header.brand .logo-dark { display:block; } }
   header.brand span { font-weight:800; font-size:18px; color:var(--head); }
+  .sec { border-top:1px solid var(--gold,#c9a45c); margin:28px 0 8px; padding-top:16px; } .sec h3 { margin:0 0 6px; }
   h1 { font-size:20px; margin:0 0 12px; color:var(--head); } h2, h3 { color:var(--head); }
   nav { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
   button, select, input, textarea { font:inherit; padding:8px 13px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
@@ -295,13 +296,15 @@ const TABS = {
     }
     {
       const r = await call("admin", { action: "auctions_overview" });   // the strikes come with this call
-      v.append(el("h3", {}, `Sellers with strikes (${r.strikes.length})`));
-      v.append(el("p", { class: "mut" }, "A seller gets a strike for cancelling a paid order (unless the buyer asked), cancelling an auction after someone bid, or when a product is removed. At 3 strikes they cannot add products, go live, start auctions or list vehicles."));
-      if (!r.strikes.length) v.append(el("p", { class: "mut" }, "None."));
-      for (const x of r.strikes) v.append(el("div", { class: "card" },
+      const box = el("div", { class: "sec" }); v.append(box);
+      box.append(el("h3", {}, `Sellers with strikes (${r.strikes.length})`));
+      box.append(el("p", { class: "mut" }, "A seller gets a strike for cancelling a paid order (unless the buyer asked), cancelling an auction after someone bid, or when a product is removed. At 3 strikes they cannot add products, go live, start auctions or list vehicles."));
+      if (!r.strikes.length) box.append(el("p", { class: "mut" }, "None."));
+      for (const x of r.strikes) box.append(el("div", { class: "card" },
         el("b", {}, `${x.seller || "?"} (@${x.username || "?"}): ${x.strikes} strike${x.strikes === 1 ? "" : "s"}`),
         el("div", { class: "row" }, el("button", { class: "primary", onclick: () => confirm(`Clear all strikes for ${x.seller}?`) && act("admin", { action: "clear_strikes", seller_id: x.seller_id }, "Strikes cleared") }, "Clear strikes"))));
     }
+    v.append(el("div", { class: "sec" }, el("h3", {}, `All sellers (${sellers.length})`), el("p", { class: "mut" }, "Verify the IBAN, suspend, or remove verification.")));
     for (const s of sellers) {
       v.append(el("div", { class: "card" },
         el("b", {}, `${s.full_name} (@${s.username}) · ${s.kind}`),
