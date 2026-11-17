@@ -502,7 +502,8 @@ const TABS = {
     }
     v.append(el("h3", {}, `Other listings (${rest.length})`));
     for (const x of rest) v.append(el("div", { class: "card" }, el("b", {}, `${x.title} · ${x.status}`),
-      el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.sale_type} · fee ${sar(x.fee_halalas)}${x.fee_payment_id && !x.fee_refunded_at && ["rejected", "cancelled"].includes(x.status) ? " · FEE NOT REFUNDED YET" : ""}`),
+      el("div", { class: "mut" }, `${x.seller || "?"} (@${x.username || "?"}) · ${x.sale_type} · fee ${sar(x.fee_halalas)}${x.fee_payment_id && !x.fee_refunded_at && x.status === "rejected" ? " · FEE NOT REFUNDED YET" : ""}`),
+      isOwner && x.fee_payment_id && !x.fee_refunded_at && x.status === "rejected" ? el("div", { class: "row" }, el("button", { class: "primary", onclick: () => confirm(`Refund the ${sar(x.fee_halalas)} listing fee of "${x.title}" to the seller's card?`) && act("admin", { action: "vehicle_fee_refund", id: x.id }, "Fee refunded") }, "Refund fee")) : null,
       x.status === "live" ? el("div", { class: "row" }, ...x.photo_urls.slice(0, 3).map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:60px;border-radius:6px" }))),
         el("button", { class: "danger", onclick: () => { const why = prompt("Reason for the seller (they get it by email). The fee is kept."); if (why && why.trim()) act("admin", { action: "vehicle_takedown", id: x.id, reason: why.trim() }, "Listing taken down"); } }, "Take down")) : null));
   },
