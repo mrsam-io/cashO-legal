@@ -141,6 +141,7 @@
   var u = (new URLSearchParams(location.search).get("u") || "").replace(/^@/, "");
   applyLang();
   if (/^[A-Za-z0-9._]{3,24}$/.test(u)) {
+    if (location.hostname === "appcasho.com") { try { history.replaceState(null, "", "/@" + u); } catch (e) {} }   // put the short address back in the address bar (a reload goes through 404.html again)
     fetch(API + "/rest/v1/rpc/seller_page", { method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_username: u }) })
       .then(function (r) { return r.json(); })
       .then(function (r) {
