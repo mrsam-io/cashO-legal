@@ -211,6 +211,16 @@ const TABS = {
           el("span", {}, el("b", { class: x.ok && !old ? "ok" : "bad" }, "● "), x.name),
           el("span", { class: "mut" }, x.ok ? `${x.ms} ms` : `not answering (${x.status || "no reply"}), ${x.fails} checks in a row`)))));
     }
+    if (isOwner) {   // UptimeRobot's own view (outside Casho), if the read-only key is set
+      try {
+        const u = await call("admin", { action: "uptimerobot" });
+        if (u.configured) v.append(el("h3", {}, "Outside view (UptimeRobot)"), el("div", { class: "card" },
+          u.error ? el("div", { class: "bad" }, u.error) : null,
+          ...(u.monitors ?? []).map((m) => el("div", { class: "row", style: "justify-content:space-between;margin-top:6px" },
+            el("span", {}, el("b", { class: m.status === 2 ? "ok" : "bad" }, "● "), m.name),
+            el("span", { class: "mut" }, m.status === 2 ? `up · ${m.day}% today · ${m.month}% in 30 days` : m.status === 0 ? "paused" : "DOWN")))));
+      } catch (e) { /* a bonus: the page works without it */ }
+    }
     v.append(el("h3", {}, "Needs you now"));
     if (!items.length && !al.length) v.append(el("div", { class: "card" }, el("b", { class: "ok" }, "Nothing needs you right now."), el("div", { class: "mut" }, "Payments and refunds look healthy. Use the menu to look around.")));
     else if (items.length) v.append(el("div", { class: "grid" }, ...items.map(([tabName, count, label]) => el("button", { class: "tile", onclick: () => show(tabName) }, el("b", {}, String(count)), el("span", {}, label)))));
