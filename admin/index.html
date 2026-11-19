@@ -202,6 +202,15 @@ const TABS = {
         el("div", { class: "row" }, el("button", { class: "primary", onclick: () => act("admin", { action: "alert_resolve", id: a.id }, "Resolved") }, "Resolved"))))));
     const items = [["Refunds", n.refunds, "waiting to be refunded"], ["Claims", n.claims, "open claims to decide"], ["Reports", n.reports, "user reports"], ["Tickets", n.tickets, "support tickets"],
       ["Badges", n.verifications, "badge requests"], ["Photos", n.photos, "flagged photos"], ["Payouts", n.payouts_sellers, `sellers to pay (${sar(n.payouts_halalas || 0)})`], ["Suggestions", n.suggestions, "new suggestions"]].filter((x) => x[1]);
+    const sys = n.systems ?? [];
+    if (sys.length) {   // the built-in uptime check (171): one line per system we depend on
+      const old = Date.now() - Math.max(...sys.map((x) => new Date(x.checked_at).getTime())) > 4 * 60000;
+      v.append(el("h3", {}, "Systems"), el("div", { class: "card" },
+        old ? el("div", { class: "bad" }, `The checker stopped: last check ${Math.round((Date.now() - Math.max(...sys.map((x) => new Date(x.checked_at).getTime()))) / 60000)} minutes ago. The server timer may be down.`) : null,
+        ...sys.map((x) => el("div", { class: "row", style: "justify-content:space-between;margin-top:6px" },
+          el("span", {}, el("b", { class: x.ok && !old ? "ok" : "bad" }, "● "), x.name),
+          el("span", { class: "mut" }, x.ok ? `${x.ms} ms` : `not answering (${x.status || "no reply"}), ${x.fails} checks in a row`)))));
+    }
     v.append(el("h3", {}, "Needs you now"));
     if (!items.length && !al.length) v.append(el("div", { class: "card" }, el("b", { class: "ok" }, "Nothing needs you right now."), el("div", { class: "mut" }, "Payments and refunds look healthy. Use the menu to look around.")));
     else if (items.length) v.append(el("div", { class: "grid" }, ...items.map(([tabName, count, label]) => el("button", { class: "tile", onclick: () => show(tabName) }, el("b", {}, String(count)), el("span", {}, label)))));
