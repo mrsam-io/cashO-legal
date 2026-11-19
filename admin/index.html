@@ -10,8 +10,8 @@
   @font-face { font-family:"Manrope"; src:url(https://appcasho.com/assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight:200 800; font-display:swap; }
   @font-face { font-family:"Tajawal"; src:url(https://appcasho.com/assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight:400; font-display:swap; }
   /* Casho brand kit */
-  :root { --emerald:#188B67; --deep:#126C50; --forest:#122D24; --gold:#BFA060; --bg:#F1E8D6; --fg:#122D24; --mut:#5f6f66; --line:#e3d8c0; --card:#FFFDF8; --btn:#188B67; --btnfg:#fff; --bad:#c62828; --ok:#126C50; --head:#126C50; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#122D24; --fg:#F5EEDD; --mut:#a9bdb3; --line:#27493c; --card:#183A2F; --btn:#188B67; --btnfg:#fff; --bad:#ef7b76; --ok:#48C5A2; --head:#FFEBC6; } }
+  :root { --emerald:#188B67; --deep:#126C50; --forest:#122D24; --gold:#BFA060; --bg:#F1E8D6; --fg:#122D24; --mut:#5f6f66; --line:#e3d8c0; --card:#FFFDF8; --btn:#188B67; --btnfg:#fff; --bad:#c62828; --ok:#126C50; --head:#126C50; --bar:#188B67; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#122D24; --fg:#F5EEDD; --mut:#a9bdb3; --line:#27493c; --card:#183A2F; --btn:#188B67; --btnfg:#fff; --bad:#ef7b76; --ok:#48C5A2; --head:#FFEBC6; --bar:#48C5A2; } }
   * { box-sizing:border-box; }
   body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.45 "Manrope","Tajawal",-apple-system,system-ui,sans-serif; max-width:1240px; margin-inline:auto; }
   header.brand { display:flex; align-items:center; gap:12px; padding:6px 0 14px; border-bottom:2px solid var(--gold); margin-bottom:12px; }
@@ -22,15 +22,16 @@
   h1 { font-size:20px; margin:0 0 12px; color:var(--head); } h2, h3 { color:var(--head); }
   #shell { display:grid; grid-template-columns:230px minmax(0,1fr); gap:22px; align-items:start; margin-top:8px; }
   #tabs { position:sticky; top:12px; max-height:calc(100vh - 24px); overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:8px; }
-  #tabs .grp { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); font-weight:800; margin:14px 10px 4px; }
+  #tabs .grp { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); font-weight:800; margin:14px 10px 4px; }
   #tabs button { display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%; text-align:left; border:0; background:transparent; padding:8px 10px; border-radius:10px; font-weight:600; }
   #tabs button:hover { background:rgba(24,139,103,.12); } #tabs button.on { background:var(--deep); color:#fff; }
   .pill { background:var(--bad); color:#fff; border-radius:999px; font-size:12px; line-height:20px; min-width:20px; padding:0 6px; text-align:center; font-weight:800; }
   #tabs button.on .pill { background:#fff; color:var(--deep); }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; margin:10px 0; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr)); gap:12px; margin:10px 0; }
   .tile { display:block; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:0 4px 14px rgba(18,45,36,.07); }
   .tile:hover { border-color:var(--emerald); } .tile b { display:block; font-size:30px; color:var(--bad); line-height:1.1; } .tile span { color:var(--mut); font-size:13px; font-weight:600; }
-  @media (max-width:820px) { #shell { grid-template-columns:1fr; } #tabs { position:static; max-height:none; display:flex; flex-wrap:wrap; gap:4px; } #tabs .grp { width:100%; margin:8px 6px 0; } #tabs button { width:auto; } }
+  #menuBtn { display:none; }
+  @media (max-width:820px) { #shell { grid-template-columns:1fr; } #menuBtn { display:flex; justify-content:space-between; width:100%; } #tabs { position:static; max-height:none; display:none; gap:4px; flex-wrap:wrap; } #tabs.open { display:flex; } #tabs .grp { width:100%; margin:8px 6px 0; } #tabs button { width:auto; } }
   button, select, input, textarea { font:inherit; padding:8px 13px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--fg); }
   button { cursor:pointer; font-weight:600; } button.primary { background:var(--btn); color:var(--btnfg); border-color:var(--btn); }
   button.danger { color:var(--bad); } nav button.on { background:var(--deep); color:#fff; border-color:var(--deep); }
@@ -41,6 +42,16 @@
   #msg { min-height:20px; margin:8px 0; }
   a { color:var(--deep); } @media (prefers-color-scheme: dark) { a { color:var(--mint,#48C5A2); } }
   [hidden] { display:none !important; }
+  /* a cleaner look: visible focus, soft hover, striped tables, calmer headings */
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline:2px solid var(--emerald); outline-offset:2px; }
+  button { transition:background .15s, border-color .15s, transform .05s; } button:active { transform:scale(.98); }
+  button:not(.primary):not(.on):hover { border-color:var(--emerald); } button.primary:hover { background:var(--deep); }
+  tr:nth-child(even) td { background:rgba(18,45,36,.035); } @media (prefers-color-scheme: dark) { tr:nth-child(even) td { background:rgba(255,255,255,.04); } }
+  h3 { font-size:16px; margin:24px 0 6px; letter-spacing:.01em; } h3:first-child { margin-top:4px; }
+  .card { transition:box-shadow .15s; } .card:hover { box-shadow:0 6px 20px rgba(18,45,36,.12); }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr)); gap:12px; }
+  .chart svg { display:block; margin-top:6px; } .chart b { font-size:22px; }
+  input[type=search], input#secret { min-width:0; max-width:100%; }
 </style>
 </head>
 <body>
@@ -51,6 +62,7 @@
 </div>
 <div id="msg" class="mut">The secret stays in this tab only. Close the tab and it is gone.</div>
 <div id="shell" hidden>
+  <button id="menuBtn" type="button"><span id="menuName">Home</span><span>Menu ▾</span></button>
   <aside id="tabs"></aside>
   <main>
     <input id="q" type="search" placeholder="Search this tab (name, username, IBAN, product, status...)" size="50" hidden>
@@ -193,6 +205,7 @@ const TABS = {
     v.append(el("h3", {}, "Needs you now"));
     if (!items.length && !al.length) v.append(el("div", { class: "card" }, el("b", { class: "ok" }, "Nothing needs you right now."), el("div", { class: "mut" }, "Payments and refunds look healthy. Use the menu to look around.")));
     else if (items.length) v.append(el("div", { class: "grid" }, ...items.map(([tabName, count, label]) => el("button", { class: "tile", onclick: () => show(tabName) }, el("b", {}, String(count)), el("span", {}, label)))));
+    if (isOwner) { try { v.append(el("h3", {}, "Last 30 days"), chartRow(await getSeries(), ["revenue", "orders"])); } catch (e) { /* the charts are a bonus: the page works without them */ } }
   },
   async Guide(v) {   // what each tab does. The owner reads both guides (and gives the helper one to friends); a helper only sees the helper guide
     const box = el("div", { class: "card" });
@@ -441,6 +454,7 @@ const TABS = {
     const d = await call("admin", { action: "dashboard" });
     const sar = (h) => (h / 100).toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " SAR";
     const tile = (t, val, help, cls = "") => el("div", { class: "card" }, el("div", { class: "mut" }, t), el("b", { class: cls, style: "font-size:22px" }, String(val)), el("div", { class: "mut" }, help));
+    try { v.append(el("h3", {}, "Last 30 days"), chartRow(await getSeries(), ["revenue", "orders", "users"])); } catch (e) { /* the charts are a bonus */ }
     v.append(el("h3", {}, "People"),
       tile("Users", d.users, `${d.users_week} joined in the last 7 days`),
       tile("Sellers", d.sellers, "Accounts that finished seller sign-up"),
@@ -845,11 +859,55 @@ const TABS = {
   },
 };
 
+// ---- charts: plain SVG bars, no library. One bar per day; hover (or long-press) a bar for its day and number. ----
+let seriesCache = null;
+async function getSeries() {
+  if (seriesCache && Date.now() - seriesCache.at < 60000) return seriesCache.data;
+  const data = await call("admin", { action: "series" });
+  seriesCache = { at: Date.now(), data };
+  return data;
+}
+const tip = el("div", { style: "position:fixed;pointer-events:none;z-index:9;background:var(--forest);color:#F5EEDD;border-radius:10px;padding:6px 10px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none" });
+document.body.append(tip);
+const niceTop = (m) => { const p = Math.pow(10, Math.floor(Math.log10(Math.max(m, 1)))), r = m / p; return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * p; };   // a round top for the y axis
+const compact = (n) => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "K" : String(Math.round(n));
+/** One column per day. Marks follow the dataviz rules: thin (max 24px), 4px rounded top and square base, hairline grid, text in text colours,
+ *  hover/touch shows the day and the number, and a Table button gives the same numbers without hovering. axis = how to write a y tick. */
+function chart(title, days, values, fmt, axis) {
+  const NS = "http://www.w3.org/2000/svg", W = 380, H = 180, L = 38, T = 14, B = 24, n = values.length;
+  const sum = values.reduce((a, b) => a + b, 0), top = niceTop(Math.max(...values, 1)), slot = (W - L) / n, bw = Math.min(24, slot - 2), plotH = H - T - B;
+  const s = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; };
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": `${title}, last ${n} days, total ${fmt(sum)}. Use the Table button for every day.` });
+  for (const f of [0, 0.5, 1]) {   // hairline grid with its ticks
+    const y = T + plotH * (1 - f);
+    svg.append(s("line", { x1: L, x2: W, y1: y, y2: y, style: "stroke:var(--line);stroke-width:1" }), s("text", { x: L - 6, y: y + 4, "text-anchor": "end", style: "fill:var(--mut);font-size:12px" }, axis(top * f)));
+  }
+  let peak = 0; values.forEach((v, i) => { if (v > values[peak]) peak = i; });
+  values.forEach((v, i) => {
+    const x = L + i * slot + (slot - bw) / 2, h = v ? Math.max(3, plotH * v / top) : 0, y = T + plotH - h, r = Math.min(4, h, bw / 2);
+    const bar = s("path", { d: h ? `M${x},${y + h} V${y + r} Q${x},${y} ${x + r},${y} H${x + bw - r} Q${x + bw},${y} ${x + bw},${y + r} V${y + h} Z` : "", style: "fill:var(--bar)" });   // rounded top, square at the baseline
+    const hit = s("rect", { x: L + i * slot, y: T, width: slot, height: plotH, style: "fill:transparent" });   // the hit area is the whole column, bigger than the bar
+    const on = (e) => { bar.style.opacity = ".7"; tip.replaceChildren(el("b", {}, fmt(v)), el("span", { style: "opacity:.8" }, "  " + days[i])); tip.style.display = "block"; tip.style.left = Math.min(e.clientX + 12, innerWidth - 170) + "px"; tip.style.top = (e.clientY - 40) + "px"; };
+    hit.addEventListener("pointermove", on); hit.addEventListener("pointerdown", on);
+    hit.addEventListener("pointerleave", () => { bar.style.opacity = ""; tip.style.display = "none"; });
+    svg.append(bar, hit);
+  });
+  if (values[peak]) svg.append(s("text", { x: L + peak * slot + slot / 2, y: T - 1 > 8 ? T - 1 : 9, "text-anchor": peak > n / 2 ? "end" : "start", style: "fill:var(--fg);font-size:12px;font-weight:700" }, `${fmt(values[peak])} peak`));
+  svg.append(s("text", { x: L, y: H - 6, "text-anchor": "start", style: "fill:var(--mut);font-size:12px" }, days[0].slice(5)), s("text", { x: W, y: H - 6, "text-anchor": "end", style: "fill:var(--mut);font-size:12px" }, days[n - 1].slice(5)));
+  const table = el("table", { hidden: "" }, el("tr", {}, el("th", {}, "Day"), el("th", {}, title)), ...days.map((d, i) => el("tr", {}, el("td", {}, d), el("td", {}, fmt(values[i])))).reverse());
+  const toggle = el("button", { onclick: () => { table.hidden = !table.hidden; toggle.textContent = table.hidden ? "Table" : "Hide table"; } }, "Table");
+  return el("div", { class: "card chart" }, el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:8px" }, el("div", {}, el("div", { class: "mut" }, title), el("b", {}, fmt(sum)), el("span", { class: "mut" }, ` in the last ${n} days`)), toggle), svg, table);
+}
+const chartRow = (d, which) => el("div", { class: "grid2" },
+  ...[["revenue", "Revenue", sar, (x) => compact(x / 100)], ["orders", "Paid orders", String, (x) => String(Math.round(x))], ["users", "New users", String, (x) => String(Math.round(x))]]
+    .filter((c) => which.includes(c[0])).map(([k, name, f, a]) => chart(name, d.days, d[k], f, a)));
+
 let showSeq = 0;
 async function show(name) {
   tab = name; const mine = ++showSeq;
   for (const b of $("tabs").querySelectorAll("button[data-tab]")) b.classList.toggle("on", b.dataset.tab === name);
   $("q").hidden = name === "Home" || name === "Guide";
+  $("menuName").textContent = name; $("tabs").classList.remove("open");   // phone: the menu folds away after a choice
   // Every load gets its OWN container. Before, all tabs wrote into the same box, so a slow tab that finished after you had moved on
   // added its content to the newer tab (everything showed together). Now an old tab can only write into a box nobody sees any more.
   const v = el("div"); $("view").replaceChildren(v);
@@ -874,6 +932,7 @@ async function refreshNeeds() {
 setInterval(() => { if (secret && !document.hidden) refreshNeeds(); }, 60000);
 $("q").addEventListener("input", applyFilter);
 
+$("menuBtn").onclick = () => $("tabs").classList.toggle("open");
 $("go").onclick = async () => {
   secret = $("secret").value.trim(); $("secret").value = "";
   if (!secret) return;
@@ -882,7 +941,7 @@ $("go").onclick = async () => {
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
   const GROUPS = [["Money", ["Dashboard", "Money", "Refunds", "Payouts", "Referrals"]], ["Orders", ["Orders", "Claims"]], ["Listings", ["Products", "Auctions", "Vehicles", "Properties", "Ads", "Promotions"]],
-    ["People", ["Sellers", "Badges", "Banned", "Team"]], ["Safety and support", ["Reports", "Photos", "Tickets", "Suggestions", "Words"]]];
+    ["People", ["Sellers", "Badges", "Banned", "Email users", "Team"]], ["Safety and support", ["Reports", "Photos", "Tickets", "Suggestions", "Words"]]];
   const placed = new Set(GROUPS.flatMap((g) => g[1]));
   const left = Object.keys(TABS).filter((n) => !placed.has(n) && n !== "Guide" && n !== "Home");
   if (left.length) GROUPS.push(["More", left]);   // a tab nobody grouped yet still shows up
