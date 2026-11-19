@@ -251,7 +251,7 @@ const TABS = {
 
   async Photos(v) {   // 163: photos the automatic image check flagged; nothing is hidden by itself, a person decides
     const { photos } = await call("admin", { action: "flagged_photos" });
-    v.append(el("p", { class: "mut" }, "Every listing photo is checked automatically. These looked unsafe to the check (nudity, violence, drugs, alcohol...). Some are fine (for example swimwear or a bottle): press Looks fine. If it breaks the rules, remove the listing."));
+    v.append(el("p", { class: "mut" }, "Every listing photo is checked automatically. These looked unsafe to the check (nudity, violence, drugs, alcohol...). Some are fine (for example swimwear or a bottle): press Looks fine. If the photo breaks the rules, remove only that photo (the listing stays, the seller adds another). If too few photos would be left, or the whole listing is the problem, remove the listing."));
     if (!photos.length) v.append(el("p", {}, "No flagged photos."));
     const kindName = { product: "item", vehicle: "vehicle", property: "property" };
     for (const p of photos) {
@@ -264,6 +264,7 @@ const TABS = {
         el("div", {}, (p.labels || []).map((l) => `${l.parent ? l.parent + " > " : ""}${l.name} ${l.confidence}%`).join(" · ")),
         el("div", { class: "row" },
           el("button", { onclick: () => act("admin", { action: "photo_flag", id: p.id, decision: "cleared" }, "Photo marked as fine") }, "Looks fine"),
+          el("button", { class: "danger", onclick: () => confirm("Remove only this photo? The listing stays and the seller is emailed to add another.") && act("admin", { action: "photo_remove", id: p.id }, "Photo removed, seller emailed") }, "Remove this photo"),
           live ? el("button", { class: "danger", onclick: async () => {
             if (p.kind === "product") { if (!confirm("Remove this item? Paid orders that are not shipped yet are refunded. The seller is emailed.")) return; if (await removeProductFlow({ product_id: p.listing_id, reason: "offensive", strike: false })) await done(); return; }
             const why = prompt("Reason for the seller (they get it by email). The listing fee is kept."); if (!why || !why.trim()) return;
