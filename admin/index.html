@@ -83,8 +83,8 @@ async function removeProductFlow(a) {   // a = {product_id, reason, strike, repo
       else msg += ` · ${j.refunds_queued} paid order(s) waiting for a refund: ask the owner to press "Process waiting refunds"`;
     }
     if (j.orders_in_progress) msg += ` · ${j.orders_in_progress} order(s) already shipped: handle them in Orders / Claims`;
-    say(msg, "ok"); await show(tab);
-  } catch (e) { say(e.message, "bad"); }
+    say(msg, "ok"); await show(tab); return true;
+  } catch (e) { say(e.message, "bad"); return false; }
 }
 // CSV for Excel / Numbers / Google Sheets. The BOM makes Arabic names show correctly. A cell starting with = + - @ gets a leading ' so a hostile
 // name or product title can never run as a spreadsheet formula.
@@ -246,6 +246,29 @@ const TABS = {
             await act("admin", { action: "ban_user", user_id: r.seller_id, banned: true }, "Account banned"); await act("admin", { action: "review_report", id: r.id, report_action: "actioned" }, "Account banned and report closed"); } }, "Ban account"),
           el("button", { onclick: () => act("admin", { action: "review_report", id: r.id, report_action: "actioned" }, "Marked as handled") }, "Mark handled"),
           el("button", { onclick: () => act("admin", { action: "review_report", id: r.id, report_action: "dismiss" }, "Dismissed") }, "Dismiss"))));
+    }
+  },
+
+  async Photos(v) {   // 163: photos the automatic image check flagged; nothing is hidden by itself, a person decides
+    const { photos } = await call("admin", { action: "flagged_photos" });
+    v.append(el("p", { class: "mut" }, "Every listing photo is checked automatically. These looked unsafe to the check (nudity, violence, drugs, alcohol...). Some are fine (for example swimwear or a bottle): press Looks fine. If it breaks the rules, remove the listing."));
+    if (!photos.length) v.append(el("p", {}, "No flagged photos."));
+    const kindName = { product: "item", vehicle: "vehicle", property: "property" };
+    for (const p of photos) {
+      const live = p.kind === "product" ? p.listing_state === "active" : p.listing_state === "live";
+      const done = async () => { await call("admin", { action: "photo_flag", id: p.id, decision: "removed" }); await show(tab); };
+      v.append(el("div", { class: "card" },
+        el("img", { src: p.photo_url, style: "width:180px;height:180px;object-fit:cover;border-radius:8px;display:block;margin:8px 0" }),
+        el("b", {}, `${kindName[p.kind]}: ${p.title}`),
+        el("div", { class: "mut" }, `${p.seller} (@${p.username}) · ${p.listing_state} · checked ${when(p.checked_at)}`),
+        el("div", {}, (p.labels || []).map((l) => `${l.parent ? l.parent + " > " : ""}${l.name} ${l.confidence}%`).join(" · ")),
+        el("div", { class: "row" },
+          el("button", { onclick: () => act("admin", { action: "photo_flag", id: p.id, decision: "cleared" }, "Photo marked as fine") }, "Looks fine"),
+          live ? el("button", { class: "danger", onclick: async () => {
+            if (p.kind === "product") { if (!confirm("Remove this item? Paid orders that are not shipped yet are refunded. The seller is emailed.")) return; if (await removeProductFlow({ product_id: p.listing_id, reason: "offensive", strike: false })) await done(); return; }
+            const why = prompt("Reason for the seller (they get it by email). The listing fee is kept."); if (!why || !why.trim()) return;
+            try { await call("admin", { action: p.kind === "vehicle" ? "vehicle_takedown" : "property_takedown", id: p.listing_id, reason: why.trim(), strike: false }); say("Listing taken down, seller emailed", "ok"); await done(); } catch (e) { say(e.message, "bad"); }
+          } }, "Remove listing") : el("span", { class: "mut" }, "Not live: handle it in its own tab"))));
     }
   },
 
