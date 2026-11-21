@@ -891,7 +891,7 @@ const TABS = {
     }
     if (recent && recent.length) {
       v.append(el("h3", {}, "Paid through Moyasar"));
-      if (recent.some((r) => r.status === "sending" || r.status === "initiated")) v.append(el("button", { onclick: () => act("refund", { action: "payout_check" }, "Checked with Moyasar") }, "Check status now"));
+      if (recent.some((r) => r.status === "sending" || r.status === "initiated")) v.append(el("button", { onclick: async () => { try { const j = await call("refund", { action: "payout_check" }); await show(tab); say("Checked with Moyasar" + (j.details && j.details.length ? ": " + j.details.join(" | ") : ""), "ok"); } catch (e) { say(e.message, "bad"); } } }, "Check status now"));
       const t = el("table", {}, el("tr", {}, ...["Seller", "Amount", "Status", "Started"].map((h) => el("th", {}, h))));
       for (const r of recent) t.append(el("tr", {}, el("td", {}, r.seller), el("td", {}, sar(r.amount_halalas)),
         el("td", { class: r.status === "failed" ? "bad" : "" }, r.status === "paid" ? "Paid" : r.status === "failed" ? "Failed" + (r.failure_reason ? ": " + r.failure_reason : "") : "On its way"), el("td", { class: "mut" }, when(r.created_at))));
