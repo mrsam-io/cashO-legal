@@ -862,7 +862,7 @@ const TABS = {
     for (const o of orders) t.append(el("tr", {}, el("td", { title: o.id }, orderNo(o.id), el("span", { hidden: "" }, " " + o.id)), el("td", {}, o.product_title), el("td", {}, o.status), el("td", {}, "@" + o.buyer_username), el("td", {}, `${o.seller_name} (@${o.seller_username})`),
       el("td", {}, sar(o.total_halalas)), el("td", {}, sar(o.commission_halalas)),
       el("td", { class: "mut" }, [o.refund_reason, o.paid_out_at ? "paid out" : ""].filter(Boolean).join(", ")), el("td", { class: "mut" }, when(o.created_at)),
-      el("td", {}, isOwner && !["pending_payment", "cancelled", "expired"].includes(o.status) ? el("button", { onclick: () => confirm("Email the invoice PDF of this order to the buyer?") && act("refund", { action: "resend_invoice", order_id: o.id }, "Invoice emailed") }, "Send") : "")));
+      el("td", { style: "white-space:nowrap" }, isOwner && !["pending_payment", "cancelled", "expired"].includes(o.status) ? el("button", { style: "white-space:nowrap;padding:6px 12px", onclick: () => confirm("Email the invoice PDF of this order to the buyer?") && act("refund", { action: "resend_invoice", order_id: o.id }, "Invoice emailed") }, "Send") : "")));
     v.append(t);
   },
 
