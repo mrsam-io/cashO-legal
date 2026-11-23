@@ -286,6 +286,20 @@ const TABS = {
     v.append(el("div", { class: "row" }, find, findBtn, window.claimQuery ? el("button", { onclick: () => { window.claimQuery = ""; show("Claims"); } }, "Show open claims") : null));
     const { claims } = await call("admin", { action: "claims", q: window.claimQuery || undefined });
     if (!claims.length) v.append(el("p", { class: "mut" }, window.claimQuery ? "No claim for this order number." : "No open claims."));
+    // 194: the seller reported a problem with a change-of-mind return: you decide how much the buyer gets back (owner only: it is money)
+    const returnProblemBox = (c, o) => {
+      const sp = c.seller_photo_urls || [];
+      const amount = el("input", { type: "number", min: "0", step: "0.01", value: ((c.refund_halalas ?? o.total_halalas ?? 0) / 100).toFixed(2), style: "width:110px" });
+      return el("div", {},
+        el("div", { class: "box", style: "border-color:#f59e0b" }, el("h4", {}, "The seller reports a problem with the returned item"),
+          el("div", { dir: "auto" }, c.seller_note || "(no note)"),
+          sp.length ? [el("div", { class: "mut", style: "margin-top:6px" }, `${sp.length} photo${sp.length > 1 ? "s" : ""} from the seller · click to zoom`), thumbs(sp)] : null,
+          el("div", { class: "mut", style: "margin-top:6px" }, `The buyer would get ${sar(c.refund_halalas ?? o.total_halalas ?? 0)} back if the item is as sent (the paid price minus the shipping fee). Paid in total: ${sar(o.total_halalas || 0)}.`)),
+        isOwner ? el("div", { class: "row", style: "margin-top:8px" }, "Refund to the buyer (SAR): ", amount,
+            el("button", { class: "primary", onclick: () => { const h = Math.round(parseFloat(amount.value) * 100); if (!(h > 0)) return say("Enter an amount above 0, or press No refund", "bad"); confirm(`Refund ${sar(h)} to the buyer?`) && act("refund", { action: "return_problem", claim_id: c.id, refund_halalas: h }, "Refund decided"); } }, "Refund this amount"),
+            el("button", { class: "danger", onclick: () => confirm("No refund? The sale stands and the seller is paid. The buyer keeps no money back.") && act("refund", { action: "return_problem", claim_id: c.id, refund_halalas: 0 }, "No refund: the seller is paid") }, "No refund"))
+          : el("div", { class: "mut" }, "The owner decides how much the buyer gets back."));
+    };
     for (const c of claims) {
       const o = c.orders || {};
       const photos = c.photo_urls || [];
@@ -311,6 +325,8 @@ const TABS = {
         el("div", { class: "actions" },
           c.status === "refunded" || c.status === "rejected"
             ? el("b", {}, c.status === "refunded" ? "Final: the buyer was refunded." : "Final: the claim was rejected (or the time to return the item ran out).")
+            : c.status === "approved" && c.seller_result === "problem"
+            ? returnProblemBox(c, o)
             : c.status === "approved"
             ? el("div", { class: "row" },
                 c.return_tracking
