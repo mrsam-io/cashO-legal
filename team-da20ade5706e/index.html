@@ -1133,7 +1133,7 @@ $("go").onclick = async () => {
   const placed = new Set(GROUPS.flatMap((g) => g[1]));
   const left = Object.keys(TABS).filter((n) => !placed.has(n) && n !== "Guide" && n !== "Home");
   if (left.length) GROUPS.push(["More", left]);   // a tab nobody grouped yet still shows up
-  const allowed = (n) => TABS[n] && (me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals", "Refunds"].includes(n));
+  const allowed = (n) => TABS[n] && (me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals", "Refunds", "Email users", "Ads", "Promotions"].includes(n));
   canOpen = allowed;
   say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except the money pages and team).`, "ok");
   $("shell").hidden = false;
