@@ -363,7 +363,9 @@ const TABS = {
     v.append(el("h3", {}, `Deposits Casho kept (${kept.length})`));
     v.append(el("p", { class: "mut" }, "Pay the compensation to the other seller yourself (bank transfer), if you decide to."));
     for (const t of kept) { const who = t.outcome === "a_at_fault" ? [t.a_name, t.a_seller, t.b_name] : [t.b_name, t.b_seller, t.a_name];
-      v.append(el("div", { class: "card" }, el("b", {}, `${t.a_title} ⇄ ${t.b_title}`), el("div", { class: "mut" }, `${who[0]} was at fault: deposit ${dep(t, who[1])}. Other side: ${who[2]}.`))); }
+      v.append(el("div", { class: "card" }, el("b", {}, `${t.a_title} ⇄ ${t.b_title}`), el("div", { class: "mut" }, `${who[0]} was at fault: deposit ${dep(t, who[1])}. Other side: ${who[2]}.`),
+        el("div", { class: t.return_by && !t.returned_at && t.return_deadline && new Date(t.return_deadline) < new Date() ? "bad" : "mut" },
+          !t.return_by ? "No item to send back." : t.returned_at ? `Item sent back ${when(t.returned_at)}: ${t.return_carrier} ${t.return_tracking}` : `Must send the item back before ${when(t.return_deadline)}${new Date(t.return_deadline) < new Date() ? " (OVERDUE: contact the seller or suspend)" : ""}`))); }
   },
 
   async Refunds(v) {
