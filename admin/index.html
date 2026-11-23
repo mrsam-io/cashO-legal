@@ -448,6 +448,19 @@ const TABS = {
   },
 
   async Photos(v) {   // 163: photos the automatic image check flagged; nothing is hidden by itself, a person decides
+    const { flags } = await call("admin", { action: "live_flags" });   // 206: lives the AI check flagged (one picture about every 2 minutes per live)
+    v.append(el("h3", {}, `Lives flagged by the AI check (${flags.length})`));
+    v.append(el("p", { class: "mut" }, "A picture of a live looked unsafe. Nothing is ended by itself. Open the live if it is still running, then choose. Some are false alarms."));
+    if (!flags.length) v.append(el("p", {}, "No flagged lives."));
+    for (const f of flags) v.append(el("div", { class: "card" },
+      f.image_url ? el("a", { href: f.image_url, target: "_blank" }, el("img", { src: f.image_url, style: "max-width:100%;width:320px;border-radius:8px;display:block;margin:8px 0" })) : el("div", { class: "mut" }, "(no picture saved)"),
+      el("b", {}, `${f.title || "Live"} · ${f.seller} (@${f.username}) · ${f.live_status === "live" ? "LIVE NOW" : f.live_status}`),
+      el("div", { class: "mut" }, `flagged ${when(f.created_at)}`),
+      el("div", {}, (f.labels || []).map((l) => `${l.parent ? l.parent + " > " : ""}${l.name} ${l.confidence}%`).join(" · ")),
+      el("div", { class: "row" },
+        el("button", { onclick: () => act("admin", { action: "live_flag_decide", id: f.id, decision: "ok" }, "Marked as fine") }, "Looks fine"),
+        el("button", { class: "danger", onclick: () => confirm(f.live_status === "live" ? "End this live now? The stream stops." : "Mark it as handled? The live already ended.") && act("admin", { action: "live_flag_decide", id: f.id, decision: "end" }, "Done: live ended") }, f.live_status === "live" ? "End the live" : "Handled"))));
+    v.append(el("h3", {}, "Flagged photos"));
     const { photos } = await call("admin", { action: "flagged_photos" });
     v.append(el("p", { class: "mut" }, "Every listing photo is checked automatically. These looked unsafe to the check (nudity, violence, drugs, alcohol...). Some are fine (for example swimwear or a bottle): press Looks fine. If the photo breaks the rules, remove only that photo (the listing stays, the seller adds another). If too few photos would be left, or the whole listing is the problem, remove the listing."));
     if (!photos.length) v.append(el("p", {}, "No flagged photos."));
