@@ -341,6 +341,31 @@ const TABS = {
   },
 
   // What waits for a refund, one button per order (and one for all), a clear result after each, and the last refunds below.
+  async Trades(v) {   // 199: courier trades with a problem; the deposits are held on the sellers' cards until you decide
+    const { trades } = await call("admin", { action: "trades" });
+    const open = trades.filter((t) => t.status === "disputed"), kept = trades.filter((t) => t.status === "resolved");
+    v.append(el("p", { class: "mut" }, "A seller reported a problem, or one seller did not ship in time. Read both sides, then decide. The deposits are freed or kept by themselves within a minute. A held card deposit does not last for ever at the bank, so decide quickly."));
+    v.append(el("h3", {}, `Waiting for your decision (${open.length})`));
+    if (!open.length) v.append(el("p", { class: "mut" }, "None."));
+    const dep = (t, id) => { const d = (t.deposits || []).find((x) => x.seller_id === id); return d ? `${sar(d.amount_halalas)} (${d.status})` : "none"; };
+    const side = (name, carrier, tracking, shipped, proof) => `${name}: ${shipped ? `shipped ${when(shipped)} · ${carrier} ${tracking}` : "did NOT ship"}`;
+    for (const t of open) v.append(el("div", { class: "card" },
+      el("b", {}, `${t.a_name}: ${t.a_title}  ⇄  ${t.b_name}: ${t.b_title}`),
+      el("div", { class: "mut" }, side(t.a_name, t.a_carrier, t.a_tracking, t.a_shipped_at), " "),
+      el("div", { class: "mut" }, side(t.b_name, t.b_carrier, t.b_tracking, t.b_shipped_at)),
+      el("div", { class: "mut" }, `Deposits: ${t.a_name} ${dep(t, t.a_seller)} · ${t.b_name} ${dep(t, t.b_seller)}`),
+      el("div", {}, `${t.dispute_by ? (t.dispute_by === t.a_seller ? t.a_name : t.b_name) + " reports" : "Report"}: ${t.dispute_note || ""}`),
+      el("div", { class: "row" }, ...[t.a_proof_url, t.b_proof_url, ...(t.dispute_urls || [])].filter(Boolean).map((u) => el("a", { href: u, target: "_blank" }, el("img", { src: u, style: "height:90px;border-radius:6px" })))),
+      el("div", { class: "row" },
+        el("button", { class: "danger", onclick: () => confirm(`${t.a_name} is at fault? Their deposit is kept and ${t.b_name}'s is released.`) && act("admin", { action: "trade_decide", id: t.id, outcome: "a_at_fault" }, "Done") }, `${t.a_name} at fault`),
+        el("button", { class: "danger", onclick: () => confirm(`${t.b_name} is at fault? Their deposit is kept and ${t.a_name}'s is released.`) && act("admin", { action: "trade_decide", id: t.id, outcome: "b_at_fault" }, "Done") }, `${t.b_name} at fault`),
+        el("button", { onclick: () => confirm("Nobody at fault? Both deposits are released.") && act("admin", { action: "trade_decide", id: t.id, outcome: "release" }, "Done: both released") }, "Nobody at fault"))));
+    v.append(el("h3", {}, `Deposits Casho kept (${kept.length})`));
+    v.append(el("p", { class: "mut" }, "Pay the compensation to the other seller yourself (bank transfer), if you decide to."));
+    for (const t of kept) { const who = t.outcome === "a_at_fault" ? [t.a_name, t.a_seller, t.b_name] : [t.b_name, t.b_seller, t.a_name];
+      v.append(el("div", { class: "card" }, el("b", {}, `${t.a_title} ⇄ ${t.b_title}`), el("div", { class: "mut" }, `${who[0]} was at fault: deposit ${dep(t, who[1])}. Other side: ${who[2]}.`))); }
+  },
+
   async Refunds(v) {
     const { waiting, recent } = await call("refund", { action: "refunds_list" });
     const out = (o, extra) => el("div", { class: "card" }, el("b", {}, `Order #${o.id.slice(0, 8).toUpperCase()} · ${o.product_title} · ${sar(o.total_halalas)}`),
@@ -1054,6 +1079,7 @@ const FIND = [
   ["Dashboard", "charts revenue orders new users growth statistics"],
   ["Money", "money income commission fees revenue tamara moyasar balance costs profit"],
   ["Refunds", "refunds waiting refund all card money back failed refund"],
+  ["Trades", "trades swap deposit dispute courier problem"],
   ["Payouts", "payouts pay seller iban moyasar mark paid history transfer statement bank"],
   ["Referrals", "referrals influencer codes discount promo code"],
   ["Orders", "orders order number invoice resend invoice pickup handover tracking shipping buyer seller"],
@@ -1144,12 +1170,12 @@ $("go").onclick = async () => {
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
-  const GROUPS = [["Money", ["Dashboard", "Money", "Refunds", "Payouts", "Referrals"]], ["Orders", ["Orders", "Claims"]], ["Listings", ["Products", "Auctions", "Vehicles", "Properties", "Ads", "Promotions"]],
+  const GROUPS = [["Money", ["Dashboard", "Money", "Refunds", "Payouts", "Referrals"]], ["Orders", ["Orders", "Claims", "Trades"]], ["Listings", ["Products", "Auctions", "Vehicles", "Properties", "Ads", "Promotions"]],
     ["People", ["Sellers", "Badges", "Banned", "Email users", "Team"]], ["Safety and support", ["Reports", "Photos", "Tickets", "Suggestions", "Words"]]];
   const placed = new Set(GROUPS.flatMap((g) => g[1]));
   const left = Object.keys(TABS).filter((n) => !placed.has(n) && n !== "Guide" && n !== "Home");
   if (left.length) GROUPS.push(["More", left]);   // a tab nobody grouped yet still shows up
-  const allowed = (n) => TABS[n] && (me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals", "Refunds", "Email users", "Ads", "Promotions"].includes(n));
+  const allowed = (n) => TABS[n] && (me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals", "Refunds", "Email users", "Ads", "Promotions", "Trades"].includes(n));
   canOpen = allowed;
   say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except the money pages and team).`, "ok");
   $("shell").hidden = false;
