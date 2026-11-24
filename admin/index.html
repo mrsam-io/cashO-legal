@@ -344,7 +344,7 @@ const TABS = {
   async Trades(v) {   // 199: courier trades with a problem; the deposits are held on the sellers' cards until you decide
     const { trades } = await call("admin", { action: "trades" });
     const open = trades.filter((t) => t.status === "disputed"), kept = trades.filter((t) => t.status === "resolved");
-    v.append(el("p", { class: "mut" }, "A seller reported a problem, or one seller did not ship in time. Read both sides, then decide. The deposits are freed or kept by themselves within a minute. A held card deposit does not last for ever at the bank, so decide quickly."));
+    v.append(el("p", { class: "mut" }, "A seller reported a problem, or one seller did not ship in time. Read both sides, then decide. The deposits are freed or kept by themselves within a minute. A card hold lasts at most about 14 days at the bank (Moyasar), so decide within a week of the report; after that the deposit may no longer be capturable."));
     v.append(el("h3", {}, `Waiting for your decision (${open.length})`));
     if (!open.length) v.append(el("p", { class: "mut" }, "None."));
     const dep = (t, id) => { const d = (t.deposits || []).find((x) => x.seller_id === id); return d ? `${sar(d.amount_halalas)} (${d.status})` : "none"; };
