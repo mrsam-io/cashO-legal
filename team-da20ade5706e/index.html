@@ -1225,7 +1225,7 @@ $("go").onclick = async () => {
   if (!secret) return;
   let me;
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
-  if (me.needs_code) { $("codeRow").hidden = false; $("code").focus(); return say("Type the 6-digit code from your authenticator app. Lost your phone? Type one of your recovery codes."); }
+  if (me.needs_code) { $("loginRow").hidden = true; $("codeRow").hidden = false; $("code").focus();   // the password was right: its box goes away, only the code box stays return say("Type the 6-digit code from your authenticator app. Lost your phone? Type one of your recovery codes."); }
   await enter(me);
 };
 $("codeGo").onclick = async () => {   // the second step: the code from the authenticator app (or one recovery code)
