@@ -73,7 +73,7 @@
 </head>
 <body>
 <header class="brand"><img class="logo-light" src="https://appcasho.com/assets/logo-light.png" alt="Casho"><img class="logo-dark" src="https://appcasho.com/assets/logo-dark.png" alt="Casho"><span>Admin</span><button id="guideBtn" class="primary" style="margin-inline-start:auto" hidden>Guide</button></header>
-<div class="row">
+<div class="row" id="loginRow">
   <input id="secret" type="password" placeholder="Admin secret" autocomplete="off" size="36">
   <button class="primary" id="go">Open</button>
 </div>
@@ -1250,6 +1250,7 @@ async function enter(me) {
   canOpen = allowed;
   say((me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except the money pages and team).`) + (me.twofa ? "" : " Tip: turn on your authenticator code (More > Security)."), "ok");
   $("shell").hidden = false;
+  $("loginRow").hidden = true; $("codeRow").hidden = true;   // signed in: the password box goes away, so it cannot be pressed twice
   let before = null;   // the tab you were on, so the same button takes you back
   const gb = $("guideBtn"); gb.hidden = false;
   gb.onclick = () => { if (tab === "Guide") { show(before || "Home"); gb.textContent = "Guide"; } else { before = tab; show("Guide"); gb.textContent = "Back"; } };
