@@ -942,6 +942,17 @@ const TABS = {
     v.append(el("p", { class: "mut" }, "A password alone is not enough to be safe. An authenticator app (Google Authenticator, Microsoft Authenticator, Apple Passwords, 1Password...) shows a new 6-digit code every 30 seconds. With it turned on, nobody can open this page with only your password."));
     v.append(el("div", { class: "card" }, el("b", {}, me.twofa ? "Authenticator code: ON" : "Authenticator code: OFF"),
       el("div", { class: "mut" }, me.twofa ? "You type a code each time you open this page. Changing phone? Set it up again here." : "Turn it on now. It takes one minute.")));
+    if (me.owner) {   // the switch for everybody (owner only)
+      const can = me.twofa || me.required;
+      v.append(el("div", { class: "card" }, el("b", {}, me.required ? "Required for everyone: ON" : "Required for everyone: OFF"),
+        el("div", { class: "mut" }, me.required ? "Nobody can use this page with only a password. A new friend must set up the code first, then the other pages open."
+          : can ? "Friends who have no code can still sign in with only their password. Turn this on once everybody has a code. A friend without one can then only open this Security page until they set it up."
+          : "Set up your own code first (below). Then you can make it required for everyone."),
+        can ? el("div", { class: "row" }, el("button", { class: me.required ? "" : "primary", onclick: () => {
+          const msg = me.required ? "Make the authenticator code optional again?" : "Make the authenticator code required for everyone? Friends without a code can then only open the Security page until they set it up.";
+          if (confirm(msg)) act("admin", { action: "twofa_required", on: !me.required }, me.required ? "The code is optional again" : "The code is now required for everyone");
+        } }, me.required ? "Make it optional again" : "Make it required for everyone")) : null));
+    }
     const box = el("div", {});
     const showCodes = (codes) => {
       const ta = el("textarea", { readonly: "", rows: "5", style: "width:100%;font-size:15px;font-family:monospace" }); ta.value = codes.join("\n");
