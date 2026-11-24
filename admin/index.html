@@ -77,6 +77,10 @@
   <input id="secret" type="password" placeholder="Admin secret" autocomplete="off" size="36">
   <button class="primary" id="go">Open</button>
 </div>
+<div class="row" id="codeRow" hidden>
+  <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code from your authenticator app" size="36">
+  <button class="primary" id="codeGo">Confirm</button>
+</div>
 <div id="msg" class="mut">The secret stays in this tab only. Close the tab and it is gone.</div>
 <div id="shell" hidden>
   <button id="menuBtn" type="button"><span id="menuName">Home</span><span>Menu ▾</span></button>
@@ -94,8 +98,10 @@
 
 <script>
 // Everything shown from the database is put in with textContent, never as HTML, so a hostile note or name cannot run code here.
-const BASE = "https://api.appcasho.com/functions/v1/";
-let secret = "", tab = "", isOwner = false;
+// GATE: set to true ONLY when the Cloudflare Worker at appcasho.com/admin-api/ works (ADMIN_LOCK_SETUP.md, part 2, step 6). Then the calls on appcasho.com go through it. Anywhere else (a copy opened from your computer) they always go direct.
+const GATE = false;
+const BASE = GATE && location.hostname === "appcasho.com" ? "/admin-api/" : "https://api.appcasho.com/functions/v1/";
+let secret = "", session = "", tab = "", isOwner = false;   // session: proof of the authenticator code, kept in this tab only
 const $ = (id) => document.getElementById(id);
 const sar = (h) => (h / 100).toLocaleString("en", { minimumFractionDigits: 2 }) + " SAR";
 const TEAM_URL = "https://appcasho.com/admin/";   // the link friends open (the published copy of this page)
@@ -111,8 +117,9 @@ function el(tag, props = {}, ...kids) {
 function say(text, cls = "mut") { const m = $("msg"); m.className = cls; m.textContent = text; }
 
 async function call(fn, body) {
-  const r = await fetch(BASE + fn, { method: "POST", headers: { "x-admin-secret": secret, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const r = await fetch(BASE + fn, { method: "POST", headers: { "x-admin-secret": secret, ...(session ? { "x-admin-session": session } : {}), "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const j = await r.json().catch(() => ({ error: "Bad reply" }));
+  if (j.needs_code && session) throw new Error("Your sign-in time ended (12 hours). Reload this page and sign in again.");
   if (!r.ok || j.error) throw new Error(j.error || "Error " + r.status);
   return j;
 }
@@ -930,6 +937,39 @@ const TABS = {
     }
   },
 
+  async Security(v) {   // set up or change the authenticator code (208)
+    const me = await call("admin", { action: "whoami" });
+    v.append(el("p", { class: "mut" }, "A password alone is not enough to be safe. An authenticator app (Google Authenticator, Microsoft Authenticator, Apple Passwords, 1Password...) shows a new 6-digit code every 30 seconds. With it turned on, nobody can open this page with only your password."));
+    v.append(el("div", { class: "card" }, el("b", {}, me.twofa ? "Authenticator code: ON" : "Authenticator code: OFF"),
+      el("div", { class: "mut" }, me.twofa ? "You type a code each time you open this page. Changing phone? Set it up again here." : "Turn it on now. It takes one minute.")));
+    const box = el("div", {});
+    const showCodes = (codes) => {
+      const ta = el("textarea", { readonly: "", rows: "5", style: "width:100%;font-size:15px;font-family:monospace" }); ta.value = codes.join("\n");
+      box.replaceChildren(el("p", { class: "ok" }, "Done. The authenticator code is ON."), el("h3", {}, "Your recovery codes"),
+        el("p", { class: "mut" }, "If you lose your phone, each of these opens the page once, instead of the 6-digit code. Save them in a safe place (a password manager) now. They are shown only once."), ta,
+        el("div", { class: "row" },
+          el("button", { onclick: async () => { try { await navigator.clipboard.writeText(ta.value); say("Copied", "ok"); } catch { ta.select(); say("Select the text and copy it.", "mut"); } } }, "Copy"),
+          el("button", { class: "primary", onclick: () => show("Security") }, "I saved them")));
+    };
+    const start = el("button", { class: "primary", onclick: async () => {
+      try {
+        const s = await call("admin", { action: "totp_setup" });
+        const img = el("img", { alt: "QR code", width: "230", height: "230", style: "background:#fff;padding:6px;border-radius:8px;display:block" });
+        if (s.svg) img.src = "data:image/svg+xml;utf8," + encodeURIComponent(s.svg);
+        const codeIn = el("input", { placeholder: "6-digit code", inputmode: "numeric", autocomplete: "one-time-code", size: "12" });
+        const ok = el("button", { class: "primary", onclick: async () => {
+          try { const r = await call("admin", { action: "totp_confirm", code: codeIn.value.trim() }); session = r.session; showCodes(r.recovery); } catch (e) { say(e.message, "bad"); }
+        } }, "Turn it on");
+        codeIn.addEventListener("keydown", (e) => { if (e.key === "Enter") ok.click(); });
+        box.replaceChildren(el("p", {}, "1. Open your authenticator app, add an account and scan this picture."), s.svg ? img : "",
+          el("p", { class: "mut" }, "Cannot scan it? In the app choose to type a key, and type this one:"), el("code", { style: "user-select:all;word-break:break-all" }, s.secret),
+          el("p", {}, "2. Type the 6-digit code the app shows now:"), el("div", { class: "row" }, codeIn, ok));
+        codeIn.focus();
+      } catch (e) { say(e.message, "bad"); }
+    } }, me.twofa ? "Move to a new phone" : "Set up the authenticator code");
+    v.append(el("div", { class: "row" }, start), box);
+  },
+
   async Team(v) {
     const { helpers } = await call("admin", { action: "helpers" });
     const { log } = await call("admin", { action: "team_log" });
@@ -953,9 +993,10 @@ const TABS = {
     if (!helpers.length) v.append(el("p", { class: "mut" }, "No friends added yet."));
     for (const h of helpers) {
       v.append(el("div", { class: "card" },
-        el("b", {}, h.name), el("div", { class: "mut" }, `Added ${when(h.created_at)} · last login ${h.last_login ? when(h.last_login) : "never"}`),
+        el("b", {}, h.name), el("div", { class: "mut" }, `Added ${when(h.created_at)} · last login ${h.last_login ? when(h.last_login) : "never"} · authenticator code ${h.twofa ? "ON" : "off"}`),
         el("div", { class: "row" },
           el("button", { onclick: async () => { if (!confirm(`Make a new password for ${h.name}? The old one stops working.`)) return; try { window.invite = await call("admin", { action: "reset_helper", name: h.name }); show("Team"); } catch (e) { say(e.message, "bad"); } } }, "New password"),
+          h.twofa ? el("button", { onclick: () => confirm(`Reset the authenticator code of ${h.name}? They set up a new one at their next sign-in (use this when they lost their phone).`) && act("admin", { action: "totp_reset", name: h.name }, `Authenticator of ${h.name} reset`) }, "Reset authenticator") : null,
           el("button", { class: "danger", onclick: () => confirm(`Remove ${h.name}? Their password stops working at once.`) && act("admin", { action: "remove_helper", name: h.name }, `${h.name} removed`) }, "Remove"))));
     }
     v.append(el("h3", {}, "What your friends did (latest 60)"));
@@ -1110,6 +1151,7 @@ const FIND = [
   ["Banned", "banned ban unban blocked users"],
   ["Email users", "email users broadcast newsletter send email all users"],
   ["Team", "team helpers friends access staff"],
+  ["Security", "security 2fa authenticator code password phone recovery"],
   ["Reports", "reports flags abuse remove product strike strikes warn seller report user chat"],
   ["Photos", "photos flagged image check ai hidden"],
   ["Tickets", "tickets support messages help customer service order help"],
@@ -1179,10 +1221,24 @@ $("q").addEventListener("input", applyFilter);
 
 $("menuBtn").onclick = () => $("tabs").classList.toggle("open");
 $("go").onclick = async () => {
-  secret = $("secret").value.trim(); $("secret").value = "";
+  secret = $("secret").value.trim(); $("secret").value = ""; session = "";
   if (!secret) return;
   let me;
   try { me = await call("admin", { action: "whoami" }); } catch (e) { secret = ""; return say(e.message, "bad"); }
+  if (me.needs_code) { $("codeRow").hidden = false; $("code").focus(); return say("Type the 6-digit code from your authenticator app. Lost your phone? Type one of your recovery codes."); }
+  await enter(me);
+};
+$("codeGo").onclick = async () => {   // the second step: the code from the authenticator app (or one recovery code)
+  const c = $("code").value.trim(); if (!c) return;
+  try {
+    const r = await call("admin", { action: "totp_login", code: c });
+    session = r.session; $("code").value = ""; $("codeRow").hidden = true;
+    if (r.recovery_left !== undefined) alert(`You signed in with a recovery code. ${r.recovery_left} left. Set up the authenticator again soon (More > Security).`);
+    await enter(await call("admin", { action: "whoami" }));
+  } catch (e) { say(e.message, "bad"); }
+};
+$("code").addEventListener("keydown", (e) => { if (e.key === "Enter") $("codeGo").click(); });
+async function enter(me) {
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
   const GROUPS = [["Money", ["Dashboard", "Money", "Refunds", "Payouts", "Referrals"]], ["Orders", ["Orders", "Claims", "Trades"]], ["Listings", ["Products", "Auctions", "Vehicles", "Properties", "Ads", "Promotions"]],
@@ -1192,7 +1248,7 @@ $("go").onclick = async () => {
   if (left.length) GROUPS.push(["More", left]);   // a tab nobody grouped yet still shows up
   const allowed = (n) => TABS[n] && (me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals", "Refunds", "Email users", "Ads", "Promotions", "Trades"].includes(n));
   canOpen = allowed;
-  say(me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except the money pages and team).`, "ok");
+  say((me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except the money pages and team).`) + (me.twofa ? "" : " Tip: turn on your authenticator code (More > Security)."), "ok");
   $("shell").hidden = false;
   let before = null;   // the tab you were on, so the same button takes you back
   const gb = $("guideBtn"); gb.hidden = false;
@@ -1200,8 +1256,8 @@ $("go").onclick = async () => {
   const navBtn = (n) => el("button", { "data-tab": n, onclick: () => show(n) }, n === "Home" ? "Home: needs you" : n, el("span", { class: "pill", hidden: "" }));
   const nav = $("tabs"); nav.replaceChildren(navBtn("Home"), ...GROUPS.flatMap(([g, ns]) => { const list = ns.filter(allowed); return list.length ? [el("div", { class: "grp" }, g), ...list.map(navBtn)] : []; }));
   nav.addEventListener("click", () => { gb.textContent = "Guide"; });   // a tab was chosen: the button offers the guide again
-  show("Home");
-};
+  show(me.required && !me.twofa ? "Security" : "Home");   // when the code is required, a person without one can only set it up
+}
 $("secret").addEventListener("keydown", (e) => { if (e.key === "Enter") $("go").click(); });
 </script>
 </body>
