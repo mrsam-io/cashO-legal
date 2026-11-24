@@ -99,7 +99,7 @@
 <script>
 // Everything shown from the database is put in with textContent, never as HTML, so a hostile note or name cannot run code here.
 // GATE: set to true ONLY when the Cloudflare Worker at appcasho.com/admin-api/ works (ADMIN_LOCK_SETUP.md, part 2, step 6). Then the calls on appcasho.com go through it. Anywhere else (a copy opened from your computer) they always go direct.
-const GATE = false;
+const GATE = true;
 const BASE = GATE && location.hostname === "appcasho.com" ? "/admin-api/" : "https://api.appcasho.com/functions/v1/";
 let secret = "", session = "", tab = "", isOwner = false;   // session: proof of the authenticator code, kept in this tab only
 const $ = (id) => document.getElementById(id);
