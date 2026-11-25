@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Casho Studio</title>
+<meta name="theme-color" content="#122D24"><link rel="icon" href="assets/icon.png">
+<style>
+ :root{--bg:#0f1f19;--card:#17302600;--panel:#183228;--line:#2b4a3d;--text:#f2f5f3;--mut:#9db3a8;--green:#1f7a4d;--red:#c0392b}
+ *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,Segoe UI,Roboto,sans-serif}
+ header{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)} header img{height:28px} header b{font-size:17px}
+ .wrap{max-width:1200px;margin:0 auto;padding:16px} .box{max-width:440px;margin:40px auto;background:var(--panel);padding:22px;border-radius:16px}
+ input,select,button,textarea{font:inherit;color:var(--text);background:#10261d;border:1px solid var(--line);border-radius:10px;padding:10px;width:100%}
+ button{cursor:pointer;font-weight:600} button.go{background:var(--green);border:0} button.red{background:var(--red);border:0} button.small{width:auto;padding:5px 10px;font-size:13px}
+ .err{color:#ff8a7a;min-height:1.2em} .mut{color:var(--mut)} .hide{display:none!important}
+ .grid{display:grid;grid-template-columns:minmax(260px,360px) 1fr minmax(240px,320px);gap:14px;align-items:start}
+ @media(max-width:900px){.grid{grid-template-columns:1fr}}
+ .panel{background:var(--panel);border-radius:14px;padding:12px;border:1px solid var(--line)}
+ video{width:100%;max-height:70vh;background:#000;border-radius:12px;display:block;object-fit:contain}
+ .row{display:flex;gap:8px;align-items:center;margin:8px 0}.row>*{flex:1}
+ .chat{height:58vh;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+ .msg{background:#10261d;border-radius:10px;padding:6px 10px;word-break:break-word} .msg.seller{border-left:3px solid #f1c40f} .msg.sale{background:#27552f;font-weight:600}
+ .msg .who{color:var(--mut);font-size:12px} .msg .acts{float:right;display:flex;gap:6px}
+ .pinned{background:#3a3412;border-radius:10px;padding:6px 10px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+ .prod{display:flex;gap:10px;align-items:center;padding:8px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px}.prod.on{border-color:#f1c40f;background:#2a2a14}
+ .prod img{width:48px;height:48px;object-fit:cover;border-radius:8px;background:#000} .prod .t{flex:1;min-width:0} .prod .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .pill{display:inline-block;background:#10261d;border-radius:999px;padding:4px 12px;margin-right:6px}.livedot{color:#ff5a4a;font-weight:700}
+</style>
+</head>
+<body>
+<header><img src="assets/logo-dark.png" alt="Casho"><b>Studio</b><span class="mut">Go live from your computer</span></header>
+<div class="wrap">
+ <div id="auth" class="box"><p>Loading…</p></div>
+
+ <div id="setup" class="box hide">
+  <h2 style="margin-top:0">Go live</h2>
+  <div class="mut">Title</div><input id="title" maxlength="80" placeholder="What are you selling today?">
+  <div class="row"><div><div class="mut">Camera</div><select id="camSel"></select></div><div><div class="mut">Microphone</div><select id="micSel"></select></div></div>
+  <video id="prevSetup" muted playsinline style="max-height:46vh"></video>
+  <p class="mut" id="camNote">Allow the camera and microphone when your browser asks.</p>
+  <button class="go" id="goBtn">Go live</button>
+  <p class="err" id="setupErr"></p>
+ </div>
+
+ <div id="room" class="hide">
+  <div class="row" style="margin-top:0"><div><span class="livedot">● LIVE</span> <span id="roomTitle"></span></div>
+   <div style="text-align:right"><span class="pill">👀 <span id="viewers">0</span></span><span class="pill">❤ <span id="likes">0</span></span></div></div>
+  <div class="grid">
+   <div class="panel">
+    <video id="prevLive" muted playsinline></video>
+    <div class="row"><button id="pauseBtn">Pause camera</button><button id="muteBtn">Mute mic</button></div>
+    <button class="red" id="endBtn">End live</button>
+    <p class="err" id="liveErr"></p>
+   </div>
+   <div class="panel">
+    <div id="pinnedComment" class="pinned hide"><div style="flex:1" id="pcText"></div><button class="small" id="pcClear">Unpin</button></div>
+    <div class="chat" id="chat"></div>
+    <div class="row"><input id="chatIn" maxlength="500" placeholder="Write to your viewers…"><button class="go small" id="chatSend" style="flex:0 0 90px">Send</button></div>
+   </div>
+   <div class="panel"><b>Products</b><p class="mut" style="margin:4px 0 10px">Tap Pin to show a product to your viewers.</p><div id="prods"></div><button id="unpinBtn" class="small">Unpin product</button></div>
+  </div>
+ </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.86.0/dist/umd/supabase.js"></script>
+<script src="https://web-broadcast.live-video.net/1.17.0/amazon-ivs-web-broadcast.js"></script>
+<script>
+/* Casho Studio: the whole live room on a computer (see WEB_LIVE_PLAN.md, stage 1). Same tables and realtime as the phone. */
+const API = "https://api.appcasho.com";
+const sb = supabase.createClient(API, "sb_publishable_P3xgBpTMeKfP2aN0P2psgQ_9KXIE4bl");
+const $ = (id) => document.getElementById(id);
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined && text !== null) e.textContent = text; if (cls) e.className = cls; return e; };
+const show = (id, on) => $(id).classList.toggle("hide", !on);
+let me = null, email = "", live = null, room = null, pinnedProductID = null, beat = null;
+const cam = { stream: null, mic: null, paused: false };
+let client = null;
+
+/* ---------- sign in ---------- */
+function authView(children) { $("auth").replaceChildren(...children); show("auth", true); show("setup", false); show("room", false); }
+function signIn(note) {
+  const mail = el("input"); mail.type = "email"; mail.placeholder = "Email"; mail.autocomplete = "email"; mail.value = email;
+  const b = el("button", "Send code", "go"), g = el("button", "Continue with Google"), msg = el("p", note || "", "err");
+  b.onclick = async () => {
+    email = mail.value.trim(); b.disabled = true; msg.textContent = "";
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    if (error) { b.disabled = false; msg.textContent = "Could not send the code. Use the email of your Casho account."; return; }
+    verify();
+  };
+  g.onclick = async () => { const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } }); if (error) msg.textContent = "Could not start Google sign-in."; };
+  authView([el("h2", "Sign in to Casho Studio"), el("p", "Use your seller account.", "mut"), mail, b, el("p", "or", "mut"), g, msg]);
+}
+function verify() {
+  const code = el("input"); code.inputMode = "numeric"; code.placeholder = "Code from your email"; code.autocomplete = "one-time-code";
+  const b = el("button", "Verify", "go"), back = el("button", "Change email"), msg = el("p", "", "err");
+  b.onclick = async () => {
+    b.disabled = true; msg.textContent = "";
+    const { error } = await sb.auth.verifyOtp({ email, token: code.value.trim(), type: "email" });
+    if (error) { b.disabled = false; msg.textContent = "That code did not work. Try again."; return; }
+    afterSignIn();
+  };
+  back.onclick = () => signIn();
+  authView([el("h2", "Enter the code"), el("p", "We sent a code to " + email + ".", "mut"), code, b, back, msg]);
+}
+async function afterSignIn() {
+  const { data } = await sb.auth.getSession();
+  if (!data.session) return signIn();
+  me = data.session.user;
+  const { data: seller } = await sb.from("sellers").select("user_id, suspended").eq("user_id", me.id).maybeSingle();
+  if (!seller || seller.suspended) return authView([el("h2", "Sellers only"), el("p", "This account is not an active seller. Become a seller in the Casho app first.", "mut"), (() => { const b = el("button", "Sign out"); b.onclick = async () => { await sb.auth.signOut(); signIn(); }; return b; })()]);
+  show("auth", false); show("setup", true);
+  await startPreview();
+}
+
+/* ---------- camera: asked for as a vertical 9:16 picture (the browser crops it), sent straight to Amazon so it keeps streaming in a background tab ---------- */
+async function listDevices() {
+  const devs = await navigator.mediaDevices.enumerateDevices();
+  const fill = (sel, kind) => { const cur = sel.value; sel.replaceChildren(...devs.filter((d) => d.kind === kind).map((d, i) => { const o = el("option", d.label || (kind === "videoinput" ? "Camera " : "Microphone ") + (i + 1)); o.value = d.deviceId; return o; })); if (cur) sel.value = cur; };
+  fill($("camSel"), "videoinput"); fill($("micSel"), "audioinput");
+}
+async function startPreview() {
+  try {
+    stopMedia();
+    const v = $("camSel").value, m = $("micSel").value;
+    const video = { deviceId: v ? { exact: v } : undefined, width: { ideal: 720 }, height: { ideal: 1280 }, aspectRatio: { ideal: 9 / 16 }, resizeMode: "crop-and-scale" };
+    cam.stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    cam.mic = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: m ? { exact: m } : undefined, echoCancellation: true, noiseSuppression: true } });
+    await listDevices();
+    $("prevSetup").srcObject = cam.stream; await $("prevSetup").play();
+    const st = cam.stream.getVideoTracks()[0].getSettings();
+    $("camNote").textContent = st.width && st.height && st.width > st.height ? "Your camera sends a wide picture, so viewers will see black bars. A vertical picture fits the app best." : "The picture is vertical so it fits the Casho app.";
+  } catch (e) { $("camNote").textContent = "Could not open the camera or microphone. Allow them in your browser and try again."; }
+}
+function stopMedia() { [cam.stream, cam.mic].forEach((s) => s && s.getTracks().forEach((t) => t.stop())); cam.stream = cam.mic = null; }
+$("camSel").onchange = startPreview; $("micSel").onchange = startPreview;
+
+/* ---------- go live ---------- */
+async function broadcast(ingest, key) {
+  const presets = ["STANDARD_PORTRAIT", "BASIC_FULL_HD_PORTRAIT", "BASIC_PORTRAIT"];
+  const st = cam.stream.getVideoTracks()[0].getSettings(), ratio = st.width && st.height ? st.height / st.width : 16 / 9;
+  let last = null;
+  for (const name of presets) {
+    const cfg = IVSBroadcastClient[name]; if (!cfg) continue;
+    try {
+      const W = cfg.maxResolution.width, H = cfg.maxResolution.height, h = Math.min(H, Math.round(W * ratio));   /* keeps the picture's shape; a wide picture gets bars */
+      const c = IVSBroadcastClient.create({ streamConfig: cfg, ingestEndpoint: ingest });
+      await c.addVideoInputDevice(cam.stream, "cam", { index: 0, x: 0, y: Math.round((H - h) / 2), width: W, height: h });
+      await c.addAudioInputDevice(cam.mic, "mic");
+      await c.startBroadcast(key);
+      return c;
+    } catch (e) { last = e; }
+  }
+  throw last || new Error("Could not start streaming");
+}
+$("goBtn").onclick = async () => {
+  const b = $("goBtn"), err = $("setupErr"); err.textContent = ""; const title = $("title").value.trim();
+  if (!title) { err.textContent = "Write a title first."; return; }
+  if (!cam.stream) { err.textContent = "The camera is not ready."; return; }
+  b.disabled = true;
+  try {
+    const { data: s } = await sb.auth.getSession();
+    const r = await fetch(API + "/functions/v1/go-live", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + s.session.access_token, apikey: "sb_publishable_P3xgBpTMeKfP2aN0P2psgQ_9KXIE4bl" }, body: JSON.stringify({ title, client: "web" }) });
+    const info = await r.json();
+    if (!r.ok) throw new Error(info.error || "Could not start the live");
+    live = { id: info.live_id, title };
+    try { client = await broadcast(info.ingest_endpoint, info.stream_key); }
+    catch (e) { await sb.from("lives").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", live.id); live = null; throw new Error("Streaming did not start: " + (e && e.message ? e.message : e)); }
+    enterRoom();
+  } catch (e) { err.textContent = e.message; b.disabled = false; }
+};
+
+/* ---------- the live room ---------- */
+function enterRoom() {
+  show("setup", false); show("room", true); $("roomTitle").textContent = live.title;
+  $("prevLive").srcObject = cam.stream; $("prevLive").play();
+  beat = setInterval(() => sb.from("lives").update({ last_seen_at: new Date().toISOString() }).eq("id", live.id).then(() => {}), 15000);
+  loadChat(); loadProducts(); subscribe();
+  window.onbeforeunload = (e) => { e.preventDefault(); e.returnValue = ""; };
+}
+const chatBox = () => $("chat");
+function addMsg(m) {
+  const d = el("div", null, "msg" + (m.is_seller ? " seller" : "") + (m.kind === "sale" ? " sale" : ""));
+  if (m.user_id && m.user_id !== me.id && m.kind !== "sale") {
+    const a = el("span", null, "acts"); const mu = el("button", "Mute", "small"), pn = el("button", "Pin", "small");
+    mu.onclick = async () => { const { error } = await sb.from("live_mutes").insert({ live_id: live.id, user_id: m.user_id }); if (error) liveErr(error.message); else mu.textContent = "Muted"; };
+    pn.onclick = () => pinComment(m.body, m.sender_name);
+    a.append(pn, mu); d.append(a);
+  }
+  if (m.kind !== "sale") d.append(el("div", m.sender_name || "", "who"));
+  d.append(el("div", m.body)); const box = chatBox(); const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30; box.append(d); if (atEnd) box.scrollTop = box.scrollHeight;
+}
+function liveErr(t) { $("liveErr").textContent = t || ""; }
+async function loadChat() {
+  const { data } = await sb.from("live_messages").select("*").eq("live_id", live.id).order("id", { ascending: false }).limit(30);
+  (data || []).reverse().forEach(addMsg);
+}
+async function pinComment(body, name) {
+  const { error } = await sb.from("lives").update({ pinned_comment: body, pinned_comment_author: name }).eq("id", live.id); if (error) liveErr(error.message);
+}
+$("pcClear").onclick = async () => { await sb.from("lives").update({ pinned_comment: null, pinned_comment_author: null }).eq("id", live.id); };
+function showPinnedComment(row) {
+  const on = !!row.pinned_comment; show("pinnedComment", on); if (on) $("pcText").textContent = (row.pinned_comment_author ? row.pinned_comment_author + ": " : "") + row.pinned_comment;
+}
+async function sendChat() {
+  const t = $("chatIn").value.trim(); if (!t) return; $("chatIn").value = "";
+  const { error } = await sb.from("live_messages").insert({ live_id: live.id, user_id: me.id, body: t }); liveErr(error ? error.message : "");
+}
+$("chatSend").onclick = sendChat; $("chatIn").onkeydown = (e) => { if (e.key === "Enter") sendChat(); };
+
+const photoURL = (p) => p ? API + "/storage/v1/object/public/product-photos/" + p : "";
+async function loadProducts() {
+  await sb.rpc("release_expired_orders");
+  const { data } = await sb.from("products").select("*").eq("seller_id", me.id).eq("active", true).gt("quantity", 0).order("created_at", { ascending: false });
+  const box = $("prods"); box.replaceChildren();
+  if (!data || !data.length) box.append(el("p", "No products yet. Add some in the Casho app.", "mut"));
+  (data || []).forEach((p) => {
+    const d = el("div", null, "prod" + (p.id === pinnedProductID ? " on" : "")); const im = el("img"); im.src = photoURL((p.photos || [])[0]); im.alt = "";
+    const t = el("div", null, "t"); t.append(el("div", p.title), el("div", (p.price_halalas / 100).toFixed(2) + " SAR · " + p.quantity + " left", "mut"));
+    const b = el("button", "Pin", "small go"); b.onclick = () => pinProduct(p.id);
+    d.append(im, t, b); box.append(d);
+  });
+}
+async function pinProduct(id) {
+  const { error } = await sb.from("live_pins").insert({ live_id: live.id, product_id: id }); if (error) return liveErr(error.message);
+  pinnedProductID = id; liveErr(""); loadProducts();
+}
+$("unpinBtn").onclick = async () => { const { error } = await sb.from("live_pins").insert({ live_id: live.id, product_id: null }); if (error) return liveErr(error.message); pinnedProductID = null; loadProducts(); };
+
+function subscribe() {
+  room = sb.channel("room-" + live.id);
+  room.on("postgres_changes", { event: "INSERT", schema: "public", table: "live_messages", filter: "live_id=eq." + live.id }, (p) => addMsg(p.new))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lives", filter: "id=eq." + live.id }, (p) => { $("likes").textContent = p.new.like_count || 0; showPinnedComment(p.new); })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "products", filter: "seller_id=eq." + me.id }, () => loadProducts())
+      .on("presence", { event: "sync" }, () => { $("viewers").textContent = Object.keys(room.presenceState()).length; })
+      .subscribe();
+}
+
+$("pauseBtn").onclick = async () => {
+  cam.paused = !cam.paused; cam.stream.getVideoTracks().forEach((t) => { t.enabled = !cam.paused; });   /* black picture while paused; viewers also see the cover */
+  $("pauseBtn").textContent = cam.paused ? "Resume camera" : "Pause camera";
+  await sb.from("lives").update({ paused: cam.paused }).eq("id", live.id);
+};
+$("muteBtn").onclick = () => { const t = cam.mic.getAudioTracks()[0]; t.enabled = !t.enabled; $("muteBtn").textContent = t.enabled ? "Mute mic" : "Unmute mic"; };
+$("endBtn").onclick = async () => {
+  if (!confirm("End your live now?")) return;
+  window.onbeforeunload = null; clearInterval(beat);
+  try { client && client.stopBroadcast(); } catch (e) {}
+  await sb.from("lives").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", live.id);
+  if (room) sb.removeChannel(room);
+  live = null; stopMedia(); show("room", false); authView([el("h2", "Your live ended"), el("p", "Thank you. You can go live again any time.", "mut"), (() => { const b = el("button", "Go live again", "go"); b.onclick = () => location.reload(); return b; })()]);
+};
+
+/* start */
+(async () => { const { data } = await sb.auth.getSession(); if (data.session) afterSignIn(); else signIn(); })();
+</script>
+</body>
+</html>
