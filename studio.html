@@ -25,6 +25,7 @@
  .pinned{background:#3a3412;border-radius:10px;padding:6px 10px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
  .prod{display:flex;gap:10px;align-items:center;padding:8px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px}.prod.on{border-color:#f1c40f;background:#2a2a14}
  .prod img{width:48px;height:48px;object-fit:cover;border-radius:8px;background:#000} .prod .t{flex:1;min-width:0} .prod .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .tab.on{background:var(--green);border-color:var(--green)}
  .pill{display:inline-block;background:#10261d;border-radius:999px;padding:4px 12px;margin-right:6px}.livedot{color:#ff5a4a;font-weight:700}
 </style>
 </head>
@@ -39,7 +40,7 @@
   <div class="row"><div><div class="mut">Camera</div><select id="camSel"></select></div><div><div class="mut">Microphone</div><select id="micSel"></select></div></div>
   <video id="prevSetup" muted playsinline style="max-height:46vh"></video>
   <p class="mut" id="camNote">Allow the camera and microphone when your browser asks.</p>
-  <button class="go" id="goBtn">Go live</button>
+  <button class="red" id="goBtn">Go live</button>
   <p class="err" id="setupErr"></p>
  </div>
 
@@ -58,7 +59,8 @@
     <div class="chat" id="chat"></div>
     <div class="row"><input id="chatIn" maxlength="500" placeholder="Write to your viewers…"><button class="go small" id="chatSend" style="flex:0 0 90px">Send</button></div>
    </div>
-   <div class="panel"><b>Products</b><p class="mut" style="margin:4px 0 10px">Tap Pin to show a product to your viewers.</p><div id="prods"></div><button id="unpinBtn" class="small">Unpin product</button></div>
+   <div class="panel"><div class="row" id="tabs" style="margin-top:0"><button class="small tab on" data-k="product">Products</button><button class="small tab hide" data-k="vehicle">Cars</button><button class="small tab hide" data-k="property">Properties</button></div>
+    <p class="mut" style="margin:4px 0 10px">Tap Pin to show it to your viewers.</p><div id="prods"></div><button id="unpinBtn" class="small">Unpin</button></div>
   </div>
  </div>
 </div>
@@ -72,7 +74,7 @@ const sb = supabase.createClient(API, "sb_publishable_P3xgBpTMeKfP2aN0P2psgQ_9KX
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined && text !== null) e.textContent = text; if (cls) e.className = cls; return e; };
 const show = (id, on) => $(id).classList.toggle("hide", !on);
-let me = null, email = "", live = null, room = null, pinnedProductID = null, beat = null;
+let me = null, email = "", live = null, room = null, beat = null;
 const cam = { stream: null, mic: null, paused: false };
 let client = null;
 
@@ -208,23 +210,38 @@ async function sendChat() {
 $("chatSend").onclick = sendChat; $("chatIn").onkeydown = (e) => { if (e.key === "Enter") sendChat(); };
 
 const photoURL = (p) => p ? API + "/storage/v1/object/public/product-photos/" + p : "";
+let items = { product: [], vehicle: [], property: [] }, tab = "product", pinned = { kind: null, id: null };
 async function loadProducts() {
   await sb.rpc("release_expired_orders");
-  const { data } = await sb.from("products").select("*").eq("seller_id", me.id).eq("active", true).gt("quantity", 0).order("created_at", { ascending: false });
+  const [pr, ve, pp] = await Promise.all([
+    sb.from("products").select("*").eq("seller_id", me.id).eq("active", true).gt("quantity", 0).order("created_at", { ascending: false }),
+    sb.rpc("seller_live_vehicles", { p_seller: me.id }), sb.rpc("seller_live_properties", { p_seller: me.id })]);
+  items.product = (pr.data || []).map((p) => ({ id: p.id, title: p.title, photo: (p.photos || [])[0], sub: (p.price_halalas / 100).toFixed(2) + " SAR · " + p.quantity + " left" }));
+  items.vehicle = (ve.data || []).map((v) => ({ id: v.id, title: v.title, photo: v.photo, sub: [v.year, v.sale_type === "auction" ? "Auction" : "", ((v.current_halalas || v.price_halalas || 0) / 100).toFixed(2) + " SAR"].filter(Boolean).join(" · ") }));
+  items.property = (pp.data || []).map((v) => ({ id: v.id, title: v.title, photo: v.photo, sub: [v.city, v.price_text].filter(Boolean).join(" · ") }));
+  document.querySelectorAll("#tabs .tab").forEach((b) => { const k = b.dataset.k; b.classList.toggle("hide", k !== "product" && !items[k].length); b.classList.toggle("on", k === tab); });
+  if (tab !== "product" && !items[tab].length) tab = "product";
+  render();
+}
+function render() {
+  document.querySelectorAll("#tabs .tab").forEach((b) => b.classList.toggle("on", b.dataset.k === tab));
   const box = $("prods"); box.replaceChildren();
-  if (!data || !data.length) box.append(el("p", "No products yet. Add some in the Casho app.", "mut"));
-  (data || []).forEach((p) => {
-    const d = el("div", null, "prod" + (p.id === pinnedProductID ? " on" : "")); const im = el("img"); im.src = photoURL((p.photos || [])[0]); im.alt = "";
-    const t = el("div", null, "t"); t.append(el("div", p.title), el("div", (p.price_halalas / 100).toFixed(2) + " SAR · " + p.quantity + " left", "mut"));
-    const b = el("button", "Pin", "small go"); b.onclick = () => pinProduct(p.id);
+  const label = { product: "products", vehicle: "cars", property: "properties" }[tab];
+  if (!items[tab].length) box.append(el("p", "No " + label + " yet. Add some in the Casho app.", "mut"));
+  items[tab].forEach((p) => {
+    const d = el("div", null, "prod" + (pinned.kind === tab && pinned.id === p.id ? " on" : "")); const im = el("img"); im.src = photoURL(p.photo); im.alt = "";
+    const t = el("div", null, "t"); t.append(el("div", p.title), el("div", p.sub, "mut"));
+    const b = el("button", "Pin", "small go"); b.onclick = () => pin(tab, p.id);
     d.append(im, t, b); box.append(d);
   });
 }
-async function pinProduct(id) {
-  const { error } = await sb.from("live_pins").insert({ live_id: live.id, product_id: id }); if (error) return liveErr(error.message);
-  pinnedProductID = id; liveErr(""); loadProducts();
+document.querySelectorAll("#tabs .tab").forEach((b) => { b.onclick = () => { tab = b.dataset.k; render(); }; });
+async function pin(kind, id) {
+  const col = { product: "product_id", vehicle: "vehicle_id", property: "property_id" }[kind];
+  const { error } = await sb.from("live_pins").insert({ live_id: live.id, [col]: id }); if (error) return liveErr(error.message);
+  pinned = { kind, id }; liveErr(""); render();
 }
-$("unpinBtn").onclick = async () => { const { error } = await sb.from("live_pins").insert({ live_id: live.id, product_id: null }); if (error) return liveErr(error.message); pinnedProductID = null; loadProducts(); };
+$("unpinBtn").onclick = async () => { const { error } = await sb.from("live_pins").insert({ live_id: live.id, product_id: null }); if (error) return liveErr(error.message); pinned = { kind: null, id: null }; render(); };
 
 function subscribe() {
   room = sb.channel("room-" + live.id);
