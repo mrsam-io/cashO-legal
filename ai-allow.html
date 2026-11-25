@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Connect your AI · Casho</title>
+<meta name="theme-color" content="#122D24"><link rel="icon" href="assets/icon.png"><link rel="stylesheet" href="style.css">
+<style>
+ .card{max-width:440px;margin:24px auto;padding:20px;border-radius:16px;background:rgba(127,127,127,.12)}
+ .card input,.card button{width:100%;box-sizing:border-box;font-size:17px;padding:12px;margin:6px 0;border-radius:10px;border:1px solid rgba(127,127,127,.4)}
+ .card button{cursor:pointer;font-weight:600}
+ .card button.go{background:#1f7a4d;color:#fff;border:0}
+ .err{color:#c0392b} .hide{display:none}
+</style>
+</head>
+<body>
+<header class="brand"><a href="index.html"><img class="logo-light" src="assets/logo-light.png" alt="Casho"><img class="logo-dark" src="assets/logo-dark.png" alt="Casho"></a></header>
+<main>
+<div class="card" id="box"><p>Loading…</p></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.86.0/dist/umd/supabase.js"></script>
+<script>
+// Connect your own AI (Claude / ChatGPT) to Casho: the "Allow" page that Supabase's OAuth server sends the user to (see AI_CONNECT_PLAN.md).
+const sb = supabase.createClient("https://api.appcasho.com", "sb_publishable_P3xgBpTMeKfP2aN0P2psgQ_9KXIE4bl");
+const ALLOWED = ["claude.ai", "claude.com", "chatgpt.com", "openai.com"];   // only these AI apps may be connected
+const box = document.getElementById("box");
+const id = new URLSearchParams(location.search).get("authorization_id");
+let email = "";
+
+function show(...nodes) { box.replaceChildren(...nodes); }
+function el(tag, text, cls) { const e = document.createElement(tag); if (text) e.textContent = text; if (cls) e.className = cls; return e; }
+function fail(msg) { show(el("h2", "Casho"), el("p", msg, "err")); }
+const hostOK = (u) => { try { const h = new URL(u).hostname; return ALLOWED.some((a) => h === a || h.endsWith("." + a)); } catch { return false; } };
+
+async function start() {
+  if (!id) return fail("This page opens from your AI app. Go back to Claude or ChatGPT and press Connect.");
+  const { data } = await sb.auth.getSession();
+  if (data.session) return consent();
+  signIn();
+}
+
+function signIn(note) {
+  const mail = el("input"); mail.type = "email"; mail.placeholder = "Email"; mail.autocomplete = "email"; mail.value = email;
+  const b = el("button", "Send code", "go"); const msg = el("p", note || "", "err");
+  b.onclick = async () => {
+    email = mail.value.trim(); b.disabled = true; msg.textContent = "";
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    if (error) { b.disabled = false; msg.textContent = "Could not send the code. Check the email, or use the email you use in Casho."; return; }
+    verify();
+  };
+  show(el("h2", "Sign in to Casho"), el("p", "Sign in with the email of your Casho account to connect your AI."), mail, b, msg);
+}
+
+function verify() {
+  const code = el("input"); code.inputMode = "numeric"; code.placeholder = "Code from your email"; code.autocomplete = "one-time-code";
+  const b = el("button", "Verify", "go"); const msg = el("p", "", "err"); const back = el("button", "Change email");
+  b.onclick = async () => {
+    b.disabled = true; msg.textContent = "";
+    const { error } = await sb.auth.verifyOtp({ email, token: code.value.trim(), type: "email" });
+    if (error) { b.disabled = false; msg.textContent = "That code did not work. Try again."; return; }
+    consent();
+  };
+  back.onclick = () => signIn();
+  show(el("h2", "Enter the code"), el("p", "We sent a code to " + email + "."), code, b, back, msg);
+}
+
+async function consent() {
+  const { data: d, error } = await sb.auth.oauth.getAuthorizationDetails(id);
+  if (error || !d) return fail("This connection request is not valid any more. Go back to your AI app and press Connect again.");
+  if (!("authorization_id" in d)) { location.href = d.redirect_url; return; }   // already allowed before
+  const name = (d.client && d.client.name) || "An app";
+  if (!hostOK(d.redirect_uri)) {   // an unknown app: refuse for the user
+    const { data: r } = await sb.auth.oauth.denyAuthorization(id);
+    if (r && r.redirect_url) { fail("This app is not allowed to connect to Casho."); return; }
+    return fail("This app is not allowed to connect to Casho.");
+  }
+  const ul = el("ul");
+  ["Your own orders (bought and sold) and where they are", "Your sales numbers and your shop items", "Searching the public shop for you"].forEach((t) => ul.append(el("li", t)));
+  const yes = el("button", "Allow", "go"), no = el("button", "Not now"), msg = el("p", "", "err");
+  const go = async (fn) => {
+    yes.disabled = no.disabled = true;
+    const { data, error } = await fn(id);
+    if (error || !data || !data.redirect_url) { yes.disabled = no.disabled = false; msg.textContent = "Something went wrong. Please try again."; return; }
+    location.href = data.redirect_url;
+  };
+  yes.onclick = () => go((x) => sb.auth.oauth.approveAuthorization(x));
+  no.onclick = () => go((x) => sb.auth.oauth.denyAuthorization(x));
+  show(el("h2", "Allow " + name + " to read your Casho?"), el("p", "It will be able to read:"), ul,
+    el("p", "It can only read. It cannot change anything, and it never sees your phone number, address, bank details or payments. You can disconnect any time in your AI app."),
+    yes, no, msg);
+}
+start();
+</script>
+</body>
+</html>
