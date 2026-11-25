@@ -49,7 +49,12 @@ function signIn(note) {
     if (error) { b.disabled = false; msg.textContent = "Could not send the code. Check the email, or use the email you use in Casho."; return; }
     verify();
   };
-  show(el("h2", "Sign in to Casho"), el("p", "Sign in with the email of your Casho account to connect your AI."), mail, b, msg);
+  const g = el("button", "Continue with Google");
+  g.onclick = async () => {   // comes back to this same page (with the same authorization_id) once Google has signed the user in
+    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.href } });
+    if (error) msg.textContent = "Could not start Google sign-in. Use the email code instead.";
+  };
+  show(el("h2", "Sign in to Casho"), el("p", "Sign in with your Casho account to connect your AI."), mail, b, el("p", "or"), g, msg);
 }
 
 function verify() {
