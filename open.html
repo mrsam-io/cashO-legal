@@ -94,7 +94,7 @@
   <div id="from"></div>
 </footer>
 <script>
-  // ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>  ?c=<vehicle listing id>  ?h=<property id>  ?r=<referral code>
+  // ?l=<live id>  ?p=<product id>  ?s=<seller id>  ?v=<product id of the video>  ?c=<vehicle listing id>  ?h=<property id>  ?r=<referral code>
   // The page shows a small preview (read-only public data) and, on a phone, also tries to open the app.
   // MEDIA = CloudFront cache in front of Supabase Storage. To go back to plain Supabase: API + "/storage/v1/object/public"
   var MEDIA = "https://d352xpzo3kf3re.cloudfront.net", API = "https://api.appcasho.com", KEY = "sb_publishable_P3xgBpTMeKfP2aN0P2psgQ_9KXIE4bl";
@@ -144,7 +144,7 @@
   }
   function brand(title, desc) { $("skel").hidden = true; $("body").hidden = true; $("pic").hidden = true; $("brandcard").hidden = false; if (title) $("bname").textContent = title; if (desc) $("bdesc").textContent = desc; }
 
-  var q = new URLSearchParams(location.search), kind = ["p", "s", "v", "c", "h", "r"].find(function (k) { return q.get(k); });
+  var q = new URLSearchParams(location.search), kind = ["p", "s", "v", "c", "h", "r", "l"].find(function (k) { return q.get(k); });
   var id = kind && q.get(kind);
   applyLang();
   if (kind === "r" ? /^[A-Za-z0-9]{3,20}$/.test(id || "") : (id && /^[0-9a-f-]{36}$/i.test(id))) {
@@ -162,6 +162,14 @@
       show({ chip: "property", title: v.title, price: v.price_text || "ask",
              meta: function (t) { return [v.purpose === "rent" ? t.rent : t.sale, v.city, v.area_sqm ? v.area_sqm + " m²" : ""].filter(Boolean).join(" · "); },
              by: v.seller_name ? "@" + (v.seller_username || v.seller_name) : "", desc: v.description, photo: (v.photos || [])[0] });
+    }).catch(function () { brand(); });
+    else if (kind === "l") get("lives?id=eq." + id + "&select=title,status,seller_id&limit=1").then(function (r) {
+      var l = r && r[0]; if (!l) return brand();
+      var txt = { en: { on: "● LIVE NOW", off: "This live has ended" }, ar: { on: "● بث مباشر الآن", off: "انتهى هذا البث" } };
+      get("profiles?id=eq." + l.seller_id + "&select=display_name,username&limit=1").then(function (s2) {
+        var who = s2 && s2[0] ? (s2[0].display_name || "@" + s2[0].username) : "";
+        brand(l.title, (l.status === "live" ? txt[lang].on : txt[lang].off) + (who ? " · " + who : ""));
+      }).catch(function () { brand(l.title); });
     }).catch(function () { brand(); });
     else if (kind === "s") get("profiles?id=eq." + id + "&select=display_name,username&limit=1").then(function (r) {
       if (r && r[0]) brand(r[0].display_name || "@" + r[0].username, T[lang].watch + (r[0].username ? "  @" + r[0].username : "")); else brand();
