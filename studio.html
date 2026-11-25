@@ -311,7 +311,7 @@ function subscribe() {
 
 /* share: the phone's share menu (or a copied link on a computer). The share counts once per person after it went through. */
 $("shareBtn").onclick = async () => {
-  const url = "https://appcasho.com/open.html?l=" + live.id, text = "Watch my live on Casho: " + live.title; let ok = false;
+  const url = "https://api.appcasho.com/functions/v1/share-live?l=" + live.id, text = "Watch my live on Casho: " + live.title; let ok = false;
   try { if (navigator.share) { await navigator.share({ title: "Casho live", text, url }); ok = true; } else { await navigator.clipboard.writeText(text + " " + url); ok = true; const old = $("shareBtn").innerHTML; $("shareBtn").textContent = "Link copied, paste it anywhere"; setTimeout(() => { $("shareBtn").innerHTML = old; }, 3000); } }
   catch (e) { /* closed the share menu: nothing is counted */ }
   if (ok) { const { data } = await sb.rpc("live_shared", { p_live: live.id }); if (typeof data === "number") $("shares").textContent = data; }
