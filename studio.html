@@ -26,6 +26,14 @@
  .prod{display:flex;gap:10px;align-items:center;padding:8px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px}.prod.on{border-color:#f1c40f;background:#2a2a14}
  .prod img{width:48px;height:48px;object-fit:cover;border-radius:8px;background:#000} .prod .t{flex:1;min-width:0} .prod .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  .tab.on{background:var(--green);border-color:var(--green)}
+ .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+ button .ico{margin-right:4px}
+ .tab,#shareBtn{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+ .tab{padding:6px 8px;font-size:13px}
+ .fx{margin:8px 0;padding:8px;border:1px solid var(--line);border-radius:12px}
+ .fxrow{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}.fxrow>span{width:76px;color:var(--mut);font-size:13px}
+ .fxrow button{width:auto;padding:5px 9px;font-size:13px}.fxrow button.on{background:var(--green);border-color:var(--green)}
+ .fxrow input[type=range]{flex:1;min-width:120px;padding:0;accent-color:var(--green)}.fxrow input[type=checkbox]{width:auto}
  .pill{display:inline-block;background:#10261d;border-radius:999px;padding:4px 12px;margin-right:6px}.livedot{color:#ff5a4a;font-weight:700}
 </style>
 </head>
@@ -38,7 +46,17 @@
   <h2 style="margin-top:0">Go live</h2>
   <div class="mut">Title</div><input id="title" maxlength="80" placeholder="What are you selling today?">
   <div class="row"><div><div class="mut">Camera</div><select id="camSel"></select></div><div><div class="mut">Microphone</div><select id="micSel"></select></div></div>
-  <video id="prevSetup" muted playsinline style="max-height:46vh"></video>
+  <video id="prevSetup" muted playsinline autoplay style="max-height:46vh"></video>
+  <div id="fxSlotSetup"><div class="fx" id="fxBox"><div><b>Effects</b></div>
+   <div id="fxCtl">
+    <div class="fxrow" id="fxBeauty"><span>Beauty</span><button data-v="0">Off</button><button data-v="1">Light</button><button data-v="2">Medium</button><button data-v="3">Strong</button></div>
+    <div class="fxrow" id="fxLook"><span>Filter</span><button data-v="none">None</button><button data-v="warm">Warm</button><button data-v="cool">Cool</button><button data-v="vivid">Vivid</button><button data-v="mono">B&amp;W</button><button data-v="glow">Glow</button></div>
+    <div class="fxrow"><span>Brightness</span><input type="range" id="fxBright" min="-1" max="1" step="0.05" value="0"></div>
+    <label class="fxrow"><span></span><input type="checkbox" id="fxBlur"> Blur the background</label>
+   </div>
+   <p class="mut" id="fxNote" style="margin:4px 0 0"></p>
+  </div>
+</div>
   <p class="mut" id="camNote">Allow the camera and microphone when your browser asks.</p>
   <button class="red" id="goBtn">Go live</button>
   <p class="err" id="setupErr"></p>
@@ -46,12 +64,13 @@
 
  <div id="room" class="hide">
   <div class="row" style="margin-top:0"><div><span class="livedot">● LIVE</span> <span id="roomTitle"></span></div>
-   <div style="text-align:right"><span class="pill">👀 <span id="viewers">0</span></span><span class="pill">❤ <span id="likes">0</span></span><span class="pill">↗ <span id="shares">0</span></span></div></div>
+   <div style="text-align:right"><span class="pill"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg> <span id="viewers">0</span></span><span class="pill"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></svg> <span id="likes">0</span></span><span class="pill"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg> <span id="shares">0</span></span></div></div>
   <div class="grid">
    <div class="panel">
-    <video id="prevLive" muted playsinline></video>
+    <video id="prevLive" muted playsinline autoplay></video>
+    <div id="fxSlotRoom"></div>
     <div class="row"><button id="pauseBtn">Pause camera</button><button id="muteBtn">Mute mic</button></div>
-    <button id="shareBtn" style="margin-bottom:8px">Share my live</button>
+    <button id="shareBtn" style="margin-bottom:8px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg> Share my live</button>
     <button class="red" id="endBtn">End live</button>
     <p class="err" id="liveErr"></p>
    </div>
@@ -60,7 +79,7 @@
     <div class="chat" id="chat"></div>
     <div class="row"><input id="chatIn" maxlength="500" placeholder="Write to your viewers…"><button class="go small" id="chatSend" style="flex:0 0 90px">Send</button></div>
    </div>
-   <div class="panel"><div class="row" id="tabs" style="margin-top:0"><button class="small tab on" data-k="product">Products</button><button class="small tab hide" data-k="vehicle">Cars</button><button class="small tab hide" data-k="property">Properties</button></div>
+   <div class="panel"><div class="row" id="tabs" style="margin-top:0"><button class="small tab on" data-k="product"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> Products</button><button class="small tab hide" data-k="vehicle"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg> Cars</button><button class="small tab hide" data-k="property"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Properties</button></div>
     <p class="mut" style="margin:4px 0 10px">Tap Pin to show it to your viewers.</p><div id="prods"></div><button id="unpinBtn" class="small">Unpin</button></div>
   </div>
  </div>
@@ -76,7 +95,7 @@ const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined && text !== null) e.textContent = text; if (cls) e.className = cls; return e; };
 const show = (id, on) => $(id).classList.toggle("hide", !on);
 let me = null, email = "", live = null, room = null, beat = null;
-const cam = { stream: null, mic: null, paused: false };
+const cam = { raw: null, stream: null, mic: null, paused: false, layer: null };   /* raw = the camera itself; stream = what is shown and sent (the same, or the picture with effects) */
 let client = null;
 
 /* ---------- sign in ---------- */
@@ -126,28 +145,65 @@ async function startPreview() {
     stopMedia();
     const v = $("camSel").value, m = $("micSel").value;
     const video = { deviceId: v ? { exact: v } : undefined, width: { ideal: 720 }, height: { ideal: 1280 }, aspectRatio: { ideal: 9 / 16 }, resizeMode: "crop-and-scale" };
-    cam.stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    cam.raw = await navigator.mediaDevices.getUserMedia({ video, audio: false }); cam.stream = cam.raw; stopFx(); if (fxOn()) startFx();
     cam.mic = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: m ? { exact: m } : undefined, echoCancellation: true, noiseSuppression: true } });
     await listDevices();
     $("prevSetup").srcObject = cam.stream; await $("prevSetup").play();
-    const st = cam.stream.getVideoTracks()[0].getSettings();
+    const st = cam.raw.getVideoTracks()[0].getSettings();
     $("camNote").textContent = st.width && st.height && st.width > st.height ? "Your camera sends a wide picture, so viewers will see black bars. A vertical picture fits the app best." : "The picture is vertical so it fits the Casho app.";
   } catch (e) { $("camNote").textContent = "Could not open the camera or microphone. Allow them in your browser and try again."; }
 }
-function stopMedia() { [cam.stream, cam.mic].forEach((s) => s && s.getTracks().forEach((t) => t.stop())); cam.stream = cam.mic = null; }
+function stopMedia() { stopFx(); [cam.raw, cam.mic].forEach((s) => s && s.getTracks().forEach((t) => t.stop())); cam.raw = cam.stream = cam.mic = null; }
 $("camSel").onchange = startPreview; $("micSel").onchange = startPreview;
+
+/* ---------- effects: beauty, filters, brightness, blurred background (Chrome / Edge on a computer) ---------- */
+const FXKEY = "casho_studio_fx";
+let FX = { beauty: 0, look: "none", bright: 0, blur: false }; try { Object.assign(FX, JSON.parse(localStorage.getItem(FXKEY) || "{}")); } catch (e) {}
+const FX_OK = typeof MediaStreamTrackProcessor !== "undefined" && typeof MediaStreamTrackGenerator !== "undefined" && typeof OffscreenCanvas !== "undefined" && typeof Worker !== "undefined";
+const fxOn = () => FX_OK && (FX.beauty > 0 || FX.look !== "none" || Math.abs(FX.bright) > 0.01 || FX.blur);
+let fxWorker = null;
+function startFx() {   /* the camera's pictures go through a worker (it keeps running in a background tab) and come out as a new track */
+  const raw = cam.raw.getVideoTracks()[0];
+  const proc = new MediaStreamTrackProcessor({ track: raw }), gen = new MediaStreamTrackGenerator({ kind: "video" });
+  fxWorker = new Worker("studio-fx.js?v=1");
+  fxWorker.onmessage = (e) => { if (e.data.type === "seg" && !e.data.ok) $("fxNote").textContent = "Background blur could not start in this browser. The other effects work."; };
+  fxWorker.postMessage({ type: "start", readable: proc.readable, writable: gen.writable, params: FX }, [proc.readable, gen.writable]);
+  cam.stream = new MediaStream([gen]);
+}
+function stopFx() { if (fxWorker) { fxWorker.terminate(); fxWorker = null; } if (cam.raw) cam.stream = cam.raw; }
+async function swapPicture() {   /* the shown and sent picture changed (effects on or off): show it, and while live send it */
+  $("prevSetup").srcObject = cam.stream; $("prevLive").srcObject = cam.stream; $("prevSetup").play().catch(() => {}); $("prevLive").play().catch(() => {});
+  if (client && live && cam.layer) { try { await client.removeVideoInputDevice("cam"); await client.addVideoInputDevice(cam.stream, "cam", cam.layer); } catch (e) { liveErr("Could not switch the effect: " + (e && e.message || e)); } }
+}
+async function applyFx() {
+  try { localStorage.setItem(FXKEY, JSON.stringify(FX)); } catch (e) {}
+  document.querySelectorAll("#fxBeauty button").forEach((b) => b.classList.toggle("on", +b.dataset.v === FX.beauty));
+  document.querySelectorAll("#fxLook button").forEach((b) => b.classList.toggle("on", b.dataset.v === FX.look));
+  if (!cam.raw) return;
+  const want = fxOn(), had = !!fxWorker;
+  if (want && !had) { startFx(); await swapPicture(); }
+  else if (!want && had) { stopFx(); await swapPicture(); }
+  else if (want && had) fxWorker.postMessage({ type: "params", params: FX });
+}
+if (!FX_OK) { $("fxCtl").classList.add("hide"); $("fxNote").textContent = "Effects work in Chrome or Edge on a computer."; }
+document.querySelectorAll("#fxBeauty button").forEach((b) => { b.onclick = () => { FX.beauty = +b.dataset.v; applyFx(); }; });
+document.querySelectorAll("#fxLook button").forEach((b) => { b.onclick = () => { FX.look = b.dataset.v; applyFx(); }; });
+$("fxBright").value = FX.bright; $("fxBright").oninput = () => { FX.bright = +$("fxBright").value; applyFx(); };
+$("fxBlur").checked = FX.blur; $("fxBlur").onchange = () => { FX.blur = $("fxBlur").checked; applyFx(); };
+applyFx();
 
 /* ---------- go live ---------- */
 async function broadcast(ingest, key) {
   const presets = ["STANDARD_PORTRAIT", "BASIC_FULL_HD_PORTRAIT", "BASIC_PORTRAIT"];
-  const st = cam.stream.getVideoTracks()[0].getSettings(), ratio = st.width && st.height ? st.height / st.width : 16 / 9;
+  const st = cam.raw.getVideoTracks()[0].getSettings(), ratio = st.width && st.height ? st.height / st.width : 16 / 9;
   let last = null;
   for (const name of presets) {
     const cfg = IVSBroadcastClient[name]; if (!cfg) continue;
     try {
       const W = cfg.maxResolution.width, H = cfg.maxResolution.height, h = Math.min(H, Math.round(W * ratio));   /* keeps the picture's shape; a wide picture gets bars */
       const c = IVSBroadcastClient.create({ streamConfig: cfg, ingestEndpoint: ingest });
-      await c.addVideoInputDevice(cam.stream, "cam", { index: 0, x: 0, y: Math.round((H - h) / 2), width: W, height: h });
+      cam.layer = { index: 0, x: 0, y: Math.round((H - h) / 2), width: W, height: h };
+      await c.addVideoInputDevice(cam.stream, "cam", cam.layer);
       await c.addAudioInputDevice(cam.mic, "mic");
       await c.startBroadcast(key);
       return c;
@@ -175,7 +231,7 @@ $("goBtn").onclick = async () => {
 /* ---------- the live room ---------- */
 function enterRoom() {
   show("setup", false); show("room", true); $("roomTitle").textContent = live.title;
-  $("prevLive").srcObject = cam.stream; $("prevLive").play();
+  $("prevLive").srcObject = cam.stream; $("prevLive").play(); $("fxSlotRoom").append($("fxBox"));
   beat = setInterval(() => sb.from("lives").update({ last_seen_at: new Date().toISOString() }).eq("id", live.id).then(() => {}), 15000);
   loadChat(); loadProducts(); subscribe();
   window.onbeforeunload = (e) => { e.preventDefault(); e.returnValue = ""; };
@@ -256,7 +312,7 @@ function subscribe() {
 /* share: the phone's share menu (or a copied link on a computer). The share counts once per person after it went through. */
 $("shareBtn").onclick = async () => {
   const url = "https://appcasho.com/open.html?l=" + live.id, text = "Watch my live on Casho: " + live.title; let ok = false;
-  try { if (navigator.share) { await navigator.share({ title: "Casho live", text, url }); ok = true; } else { await navigator.clipboard.writeText(text + " " + url); ok = true; $("shareBtn").textContent = "Link copied, paste it anywhere"; setTimeout(() => { $("shareBtn").textContent = "Share my live"; }, 3000); } }
+  try { if (navigator.share) { await navigator.share({ title: "Casho live", text, url }); ok = true; } else { await navigator.clipboard.writeText(text + " " + url); ok = true; const old = $("shareBtn").innerHTML; $("shareBtn").textContent = "Link copied, paste it anywhere"; setTimeout(() => { $("shareBtn").innerHTML = old; }, 3000); } }
   catch (e) { /* closed the share menu: nothing is counted */ }
   if (ok) { const { data } = await sb.rpc("live_shared", { p_live: live.id }); if (typeof data === "number") $("shares").textContent = data; }
 };
