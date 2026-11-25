@@ -46,11 +46,12 @@
 
  <div id="room" class="hide">
   <div class="row" style="margin-top:0"><div><span class="livedot">● LIVE</span> <span id="roomTitle"></span></div>
-   <div style="text-align:right"><span class="pill">👀 <span id="viewers">0</span></span><span class="pill">❤ <span id="likes">0</span></span></div></div>
+   <div style="text-align:right"><span class="pill">👀 <span id="viewers">0</span></span><span class="pill">❤ <span id="likes">0</span></span><span class="pill">↗ <span id="shares">0</span></span></div></div>
   <div class="grid">
    <div class="panel">
     <video id="prevLive" muted playsinline></video>
     <div class="row"><button id="pauseBtn">Pause camera</button><button id="muteBtn">Mute mic</button></div>
+    <button id="shareBtn" style="margin-bottom:8px">Share my live</button>
     <button class="red" id="endBtn">End live</button>
     <p class="err" id="liveErr"></p>
    </div>
@@ -246,12 +247,19 @@ $("unpinBtn").onclick = async () => { const { error } = await sb.from("live_pins
 function subscribe() {
   room = sb.channel("room-" + live.id);
   room.on("postgres_changes", { event: "INSERT", schema: "public", table: "live_messages", filter: "live_id=eq." + live.id }, (p) => addMsg(p.new))
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lives", filter: "id=eq." + live.id }, (p) => { $("likes").textContent = p.new.like_count || 0; showPinnedComment(p.new); })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "lives", filter: "id=eq." + live.id }, (p) => { $("likes").textContent = p.new.like_count || 0; $("shares").textContent = p.new.share_count || 0; showPinnedComment(p.new); })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "products", filter: "seller_id=eq." + me.id }, () => loadProducts())
       .on("presence", { event: "sync" }, () => { $("viewers").textContent = Object.keys(room.presenceState()).length; })
       .subscribe();
 }
 
+/* share: the phone's share menu (or a copied link on a computer). The share counts once per person after it went through. */
+$("shareBtn").onclick = async () => {
+  const url = "https://appcasho.com/open.html?l=" + live.id, text = "Watch my live on Casho: " + live.title; let ok = false;
+  try { if (navigator.share) { await navigator.share({ title: "Casho live", text, url }); ok = true; } else { await navigator.clipboard.writeText(text + " " + url); ok = true; $("shareBtn").textContent = "Link copied, paste it anywhere"; setTimeout(() => { $("shareBtn").textContent = "Share my live"; }, 3000); } }
+  catch (e) { /* closed the share menu: nothing is counted */ }
+  if (ok) { const { data } = await sb.rpc("live_shared", { p_live: live.id }); if (typeof data === "number") $("shares").textContent = data; }
+};
 $("pauseBtn").onclick = async () => {
   cam.paused = !cam.paused; cam.stream.getVideoTracks().forEach((t) => { t.enabled = !cam.paused; });   /* black picture while paused; viewers also see the cover */
   $("pauseBtn").textContent = cam.paused ? "Resume camera" : "Pause camera";
