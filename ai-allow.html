@@ -81,7 +81,7 @@ async function consent() {
     return fail("This app is not allowed to connect to Casho.");
   }
   const ul = el("ul");
-  ["Your own orders (bought and sold) and where they are", "Your sales numbers and your shop items", "Searching the public shop for you"].forEach((t) => ul.append(el("li", t)));
+  ["Your own orders (bought and sold) and where they are", "Your sales, wallet, reviews, lives and shop items", "Sellers you follow, items you saved, your bids", "Searching the public shop for you"].forEach((t) => ul.append(el("li", t)));
   const yes = el("button", "Allow", "go"), no = el("button", "Not now"), msg = el("p", "", "err");
   const go = async (fn) => {
     yes.disabled = no.disabled = true;
@@ -92,7 +92,7 @@ async function consent() {
   yes.onclick = () => go((x) => sb.auth.oauth.approveAuthorization(x));
   no.onclick = () => go((x) => sb.auth.oauth.denyAuthorization(x));
   show(el("h2", "Allow " + name + " to read your Casho?"), el("p", "It will be able to read:"), ul,
-    el("p", "It can only read. It cannot change anything, and it never sees your phone number, address, bank details or payments. You can disconnect any time in your AI app."),
+    el("p", "It mostly reads. When you ask, it can make three small changes: follow a seller, save an item, and schedule a live. It can never place or pay for an order, change a price, move money, or see your phone number, address, bank details or payments. You can disconnect any time in your AI app or in Casho."),
     yes, no, msg);
 }
 start();
