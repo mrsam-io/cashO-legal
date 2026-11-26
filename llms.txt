@@ -1,0 +1,21 @@
+# Casho (كاشو)
+
+> Casho (كاشو) is a live-shopping app and marketplace in Saudi Arabia. Sellers go live on video from their phones and show the real item. Buyers watch, ask questions in the chat and buy in one tap. On Casho you can buy items, cars and properties, and bid in live auctions, with secure payment inside the app. Casho works in Arabic and English. The iPhone app is coming soon to the App Store (no store link or launch date yet); Android is planned next.
+
+Brand name: Casho (English), كاشو (Arabic). Website: https://appcasho.com. Operated by Alkhazinah Alriyadiyah Company For Information Technology Shakhs Wahid (شركة الخزينة الريادية لتقنية المعلومات شخص واحد), Saudi Arabia. Contact: support@appcasho.com (reply within 2 business days).
+
+## Key facts
+- Delivery is inside Saudi Arabia only. Prices are in Saudi riyals (SAR).
+- Payment is made inside the app by card or mada. Card details never reach the seller.
+- Casho holds the payment until the buyer receives the order and the 7-day report period ends.
+- If a seller does not ship within 5 days of payment, the order is cancelled and the buyer is refunded in full.
+- New sellers are reviewed before they can go live.
+
+## Pages
+- [Casho home (English)](https://appcasho.com/): what Casho is, how it works, FAQ
+- [كاشو الصفحة الرئيسية (العربية)](https://appcasho.com/ar/): ما هو كاشو، كيف يعمل، الأسئلة الشائعة
+- [Buyer guide · دليل المشتري](https://appcasho.com/guide-buyer.html): how buying, payment, order timers and reports work
+- [Seller guide · دليل البائع](https://appcasho.com/guide-seller.html): how to become a seller, go live, ship and get paid
+- [Support · الدعم](https://appcasho.com/support.html): common questions and contact
+- [Terms of Use · شروط الاستخدام](https://appcasho.com/terms.html)
+- [Privacy Policy · سياسة الخصوصية](https://appcasho.com/privacy.html)
