@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex,follow">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Casho · كاشو</title>
 <meta name="description" content="Shop live from sellers in Saudi Arabia. Watch, bid and buy on Casho. · تسوق مباشرة من بائعين في السعودية على كاشو.">
@@ -14,10 +15,9 @@
 <link rel="icon" href="assets/icon.png">
 <link rel="apple-touch-icon" href="assets/icon.png">
 <style>
-  @font-face { font-family: "Manrope"; src: url(assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight: 200 800; font-display: swap; }
-  @font-face { font-family: "Tajawal"; src: url(assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight: 400; font-display: swap; }
-  @font-face { font-family: "Tajawal"; src: url(assets/fonts/Tajawal-Bold.ttf) format("truetype"); font-weight: 700; font-display: swap; }
-  @font-face { font-family: "Tajawal"; src: url(assets/fonts/Tajawal-ExtraBold.ttf) format("truetype"); font-weight: 800; font-display: swap; }
+  @font-face { font-family:"Manrope"; src:url(assets/fonts/Manrope-latin.woff2) format("woff2"); font-weight:200 800; font-display:swap; unicode-range:U+0000-00FF,U+2013-2026; }
+  @font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Regular-ar.woff2) format("woff2"); font-weight:400; font-display:swap; unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F; }
+  @font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Bold-ar.woff2) format("woff2"); font-weight:700 800; font-display:swap; unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F; }
 
   /* Casho brand kit v1: emerald, deep emerald, forest, ivory, cream, mint, gold */
   :root {
@@ -73,7 +73,7 @@
 </head>
 <body>
 <header>
-  <a href="./"><img class="logo-light" id="logoL" src="assets/logo-light.png" alt="Casho"><img class="logo-dark" id="logoD" src="assets/logo-dark.png" alt="Casho"></a>
+  <a href="./"><img class="logo-light" id="logoL" src="assets/logo-light.webp" alt="Casho"><img class="logo-dark" id="logoD" src="assets/logo-dark.webp" alt="Casho"></a>
   <button id="lang" type="button">العربية</button>
 </header>
 <main>
@@ -106,7 +106,7 @@
   function applyLang() {
     var t = T[lang];
     document.documentElement.lang = lang; document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    $("logoL").src = lang === "ar" ? "assets/logo-ar-light.png" : "assets/logo-light.png"; $("logoD").src = lang === "ar" ? "assets/logo-ar-dark.png" : "assets/logo-dark.png";
+    $("logoL").src = lang === "ar" ? "assets/logo-ar-light.webp" : "assets/logo-light.webp"; $("logoD").src = lang === "ar" ? "assets/logo-ar-dark.webp" : "assets/logo-dark.webp";
     $("lang").textContent = t.other; $("open").textContent = t.open; $("hint").textContent = t.hint; $("storeText").textContent = APP_STORE_URL ? t.store : t.soon;
     $("fTerms").textContent = t.terms; $("fPriv").textContent = t.priv; $("from").textContent = t.from; $("live").textContent = t.live;
     if (data) draw(); else if (!$("bad").hidden) $("badt").textContent = t.bad;
