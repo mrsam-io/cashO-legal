@@ -72,6 +72,7 @@
     <div class="row"><button id="pauseBtn">Pause camera</button><button id="muteBtn">Mute mic</button></div>
     <button id="shareBtn" style="margin-bottom:8px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg> Share my live</button>
     <button class="red" id="endBtn">End live</button>
+    <p id="limitNote" class="hide" style="color:#ffb454;font-weight:600"></p>
     <p class="err" id="liveErr"></p>
    </div>
    <div class="panel">
@@ -94,7 +95,7 @@ const sb = supabase.createClient(API, "sb_publishable_P3xgBpTMeKfP2aN0P2psgQ_9KX
 const $ = (id) => document.getElementById(id);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined && text !== null) e.textContent = text; if (cls) e.className = cls; return e; };
 const show = (id, on) => $(id).classList.toggle("hide", !on);
-let me = null, email = "", live = null, room = null, beat = null;
+let me = null, email = "", live = null, room = null, beat = null, limitTimer = null;
 const cam = { raw: null, stream: null, mic: null, paused: false, layer: null };   /* raw = the camera itself; stream = what is shown and sent (the same, or the picture with effects) */
 let client = null;
 
@@ -233,7 +234,7 @@ function enterRoom() {
   show("setup", false); show("room", true); $("roomTitle").textContent = live.title;
   $("prevLive").srcObject = cam.stream; $("prevLive").play(); $("fxSlotRoom").append($("fxBox"));
   beat = setInterval(() => sb.from("lives").update({ last_seen_at: new Date().toISOString() }).eq("id", live.id).then(() => {}), 15000);
-  loadChat(); loadProducts(); subscribe();
+  loadChat(); loadProducts(); subscribe(); startLimit();
   window.onbeforeunload = (e) => { e.preventDefault(); e.returnValue = ""; };
 }
 const chatBox = () => $("chat");
@@ -322,14 +323,28 @@ $("pauseBtn").onclick = async () => {
   await sb.from("lives").update({ paused: cam.paused }).eq("id", live.id);
 };
 $("muteBtn").onclick = () => { const t = cam.mic.getAudioTracks()[0]; t.enabled = !t.enabled; $("muteBtn").textContent = t.enabled ? "Mute mic" : "Unmute mic"; };
-$("endBtn").onclick = async () => {
-  if (!confirm("End your live now?")) return;
-  window.onbeforeunload = null; clearInterval(beat);
+/* a live has a maximum length (the same one the phone uses, SQL 092): a warning in the last 10 minutes, then it ends by itself */
+async function startLimit() {
+  let max = 120;
+  try { const { data } = await sb.rpc("live_limits"); if (data && data.max_minutes) max = data.max_minutes; } catch (e) {}
+  const began = Date.now();
+  limitTimer = setInterval(() => {
+    if (!live) return;
+    const left = Math.round(max * 60 - (Date.now() - began) / 1000);
+    if (left <= 0) { closeLive("Your live reached the maximum length (" + max + " minutes) and was ended. You can go live again."); return; }
+    if (left <= 600) { const n = $("limitNote"); n.classList.remove("hide"); n.textContent = "This live ends in " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0") + " (the limit is " + max + " minutes). You can go live again after."; }
+  }, 1000);
+}
+async function closeLive(note) {
+  if (!live) return;
+  const id = live.id; live = null;   // stops the limit timer's work at once
+  window.onbeforeunload = null; clearInterval(beat); clearInterval(limitTimer);
   try { client && client.stopBroadcast(); } catch (e) {}
-  await sb.from("lives").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", live.id);
+  await sb.from("lives").update({ status: "ended", ended_at: new Date().toISOString() }).eq("id", id);
   if (room) sb.removeChannel(room);
-  live = null; stopMedia(); show("room", false); authView([el("h2", "Your live ended"), el("p", "Thank you. You can go live again any time.", "mut"), (() => { const b = el("button", "Go live again", "go"); b.onclick = () => location.reload(); return b; })()]);
-};
+  stopMedia(); show("room", false); authView([el("h2", "Your live ended"), el("p", note || "Thank you. You can go live again any time.", "mut"), (() => { const b = el("button", "Go live again", "go"); b.onclick = () => location.reload(); return b; })()]);
+}
+$("endBtn").onclick = async () => { if (!confirm("End your live now?")) return; await closeLive(); };
 
 /* start */
 (async () => { const { data } = await sb.auth.getSession(); if (data.session) afterSignIn(); else signIn(); })();
