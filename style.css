@@ -1,6 +1,8 @@
-@font-face { font-family:"Manrope"; src:url(assets/fonts/Manrope-Variable.ttf) format("truetype"); font-weight:200 800; font-display:swap; }
-@font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Regular.ttf) format("truetype"); font-weight:400; font-display:swap; }
-@font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Bold.ttf) format("truetype"); font-weight:700; font-display:swap; }
+@font-face { font-family:"Manrope"; src:url(assets/fonts/Manrope-latin.woff2) format("woff2"); font-weight:200 800; font-display:swap; unicode-range:U+0000-00FF,U+2013-2026; }
+@font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Regular-ar.woff2) format("woff2"); font-weight:400; font-display:swap; unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F; }
+@font-face { font-family:"Tajawal"; src:url(assets/fonts/Tajawal-Bold-ar.woff2) format("woff2"); font-weight:700 800; font-display:swap; unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F; }
+@media (prefers-reduced-motion:no-preference) { html { scroll-behavior:smooth; } }
+html { scroll-padding-top:12px; }
 /* Casho brand kit: emerald, deep emerald, forest, ivory, cream, mint, gold */
 :root { --emerald:#188B67; --deep:#126C50; --forest:#122D24; --ivory:#F1E8D6; --gold:#BFA060;
   --bg:var(--ivory); --card:#FFFDF8; --fg:#122D24; --mut:#5f6f66; --line:#e3d8c0; --link:#126C50; --head:#126C50; }
