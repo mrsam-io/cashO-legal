@@ -16,6 +16,7 @@ Brand name: Casho (English), كاشو (Arabic). Website: https://appcasho.com. O
 - [كاشو الصفحة الرئيسية (العربية)](https://appcasho.com/ar/): ما هو كاشو، كيف يعمل، الأسئلة الشائعة
 - [Buyer guide · دليل المشتري](https://appcasho.com/guide-buyer.html): how buying, payment, order timers and reports work
 - [Seller guide · دليل البائع](https://appcasho.com/guide-seller.html): how to become a seller, go live, ship and get paid
+- [Connect Casho to Claude and ChatGPT](https://appcasho.com/ai-connect.html): how to connect your own account to an AI assistant, what it can and cannot do
 - [Support · الدعم](https://appcasho.com/support.html): common questions and contact
 - [Terms of Use · شروط الاستخدام](https://appcasho.com/terms.html)
 - [Privacy Policy · سياسة الخصوصية](https://appcasho.com/privacy.html)
