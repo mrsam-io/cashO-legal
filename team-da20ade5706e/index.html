@@ -744,6 +744,16 @@ const TABS = {
     }
   },
 
+  async "Live video"(v) {   // 229: STANDARD or BASIC channels for every seller (owner only)
+    const r = await call("admin", { action: "live_quality" }), basic = r.basic;
+    v.append(el("div", { class: "card" }, el("b", {}, "Live video quality: " + (basic ? "BASIC (cheaper)" : "STANDARD (best quality)")),
+      el("div", { class: "mut" }, "STANDARD: viewers get several quality levels and the app picks the best one for each connection. It costs about $2 for every hour a seller is live."),
+      el("div", { class: "mut" }, "BASIC: every viewer gets the one quality the seller sends. It costs about $0.20 for every hour live, 10 times less, but a viewer on a weak connection may see buffering."),
+      el("div", { class: "mut" }, "A live that is running is not touched. A seller's channel switches when that seller next goes live. Viewing time (viewer hours) is billed by AWS on top of this and is the same for both."),
+      isOwner ? el("div", { class: "row" }, el("button", { class: basic ? "primary" : "danger", onclick: () => confirm(basic ? "Switch back to STANDARD (best quality, about $2 per live hour)?" : "Switch to BASIC (about $0.20 per live hour, one quality for every viewer)?") && act("admin", { action: "live_quality", basic: !basic }, "Saved") }, basic ? "Switch to STANDARD" : "Switch to BASIC")) : el("div", { class: "mut" }, "Only the owner can switch it.")));
+    v.append(el("div", { class: "card" }, el("b", {}, `Channels: ${r.channels}`), el("div", { class: "mut" }, `On STANDARD: ${r.on_standard} · on BASIC: ${r.on_basic}. A channel moves to the chosen quality the next time its seller goes live.`)));
+  },
+
   async Auctions(v) {
     const r = await call("admin", { action: "auctions_overview" });
     v.append(el("div", { class: "card" },
@@ -1188,6 +1198,7 @@ const FIND = [
   ["Properties", "properties real estate houses apartments listings"],
   ["Ads", "ads advertising banners campaigns"],
   ["Promotions", "promotions promote boost paid promotion"],
+  ["Live video", "live video quality standard basic channel cost aws ivs cheaper"],
   ["Sellers", "sellers suspend seller iban cr number stores accounts verification registration flag flagged document check ai strikes strike clear strikes buyer only convert ban"],
   ["Badges", "badges verification requests verified seller"],
   ["Banned", "banned ban unban blocked users"],
@@ -1284,12 +1295,12 @@ $("code").addEventListener("keydown", (e) => { if (e.key === "Enter") $("codeGo"
 async function enter(me) {
   // a helper (a friend) only gets the tabs they are allowed to use; the server checks it again on every call
   isOwner = !!me.owner;
-  const GROUPS = [["Money", ["Dashboard", "Money", "Refunds", "Payouts", "Referrals"]], ["Orders", ["Orders", "Claims", "Trades"]], ["Listings", ["Products", "Auctions", "Vehicles", "Properties", "Ads", "Promotions"]],
+  const GROUPS = [["Money", ["Dashboard", "Money", "Refunds", "Payouts", "Referrals"]], ["Orders", ["Orders", "Claims", "Trades"]], ["Listings", ["Products", "Auctions", "Vehicles", "Properties", "Ads", "Promotions", "Live video"]],
     ["People", ["Sellers", "Badges", "Banned", "Email users", "Team"]], ["Safety and support", ["Reports", "Photos", "Tickets", "Suggestions", "Words"]]];
   const placed = new Set(GROUPS.flatMap((g) => g[1]));
   const left = Object.keys(TABS).filter((n) => !placed.has(n) && n !== "Guide" && n !== "Home");
   if (left.length) GROUPS.push(["More", left]);   // a tab nobody grouped yet still shows up
-  const allowed = (n) => TABS[n] && (me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals", "Refunds", "Email users", "Ads", "Promotions", "Trades"].includes(n));
+  const allowed = (n) => TABS[n] && (me.owner || !["Dashboard", "Money", "Team", "Payouts", "Referrals", "Refunds", "Email users", "Ads", "Promotions", "Trades", "Live video"].includes(n));
   canOpen = allowed;
   say((me.owner ? "Signed in as the owner." : `Signed in as ${me.name} (helper: everything except the money pages and team).`) + (me.twofa ? "" : " Tip: turn on your authenticator code (More > Security)."), "ok");
   $("shell").hidden = false;
