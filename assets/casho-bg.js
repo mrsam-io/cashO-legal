@@ -1,48 +1,56 @@
-/* Casho page background: a lab sheet in Casho colours. A mint measuring grid that drifts with the scroll, slow gold nodes joined by hairlines,
-   and a probe that follows the pointer. Starts when the browser is idle, stays still under reduced motion, pauses when the tab is hidden. */
+/* Casho page background: "live market". Soft mint rings pulse out from random points (a live signal, a bid landing) and small gold diamonds
+   (the same diamond as the site's bullets) drift slowly upward like sparks of value. The pointer makes a small pulse. Starts when the browser is idle,
+   shows one still frame under reduced motion, pauses when the tab is hidden. */
 (function () {
   var c = document.getElementById("bg"); if (!c || !c.getContext) return;
   function start() {
     var x = c.getContext("2d"), cs = getComputedStyle(document.documentElement);
     var mint = cs.getPropertyValue("--mint").trim() || "#48C5A2", gold = cs.getPropertyValue("--gold").trim() || "#BFA060";
-    var font = getComputedStyle(document.body).fontFamily || "sans-serif";
     var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, hover = matchMedia("(hover: hover)").matches;
     var weak = (navigator.hardwareConcurrency || 8) <= 4;
-    var W = 0, H = 0, D = 1, CELL = 56, nodes = [], px = -1, py = -1, SY = 0;
+    var W = 0, H = 0, rings = [], sparks = [], last = 0, nextPulse = 0, lastMove = 0, T = 0;
     function size() {
-      D = 1; W = innerWidth; H = innerHeight; c.width = W; c.height = H; x.setTransform(1, 0, 0, 1, 0, 0); x.lineWidth = 1;
-      var n = Math.max(30, Math.min(weak ? 42 : 72, Math.round(W * H / 24000)));
-      while (nodes.length < n) nodes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .22, vy: (Math.random() - .5) * .22 });
-      nodes.length = n;
+      W = innerWidth; H = innerHeight; c.width = W; c.height = H; x.setTransform(1, 0, 0, 1, 0, 0); x.lineWidth = 1;
+      var n = Math.max(18, Math.min(weak ? 28 : 46, Math.round(W * H / 30000)));
+      while (sparks.length < n) sparks.push(spark(true));
+      sparks.length = n;
     }
-    function a(v) { x.globalAlpha = v; }
-    function draw() {
+    function spark(anywhere) {
+      return { x: Math.random() * W, y: anywhere ? Math.random() * H : H + 10, s: 3 + Math.random() * 5.5, vy: .14 + Math.random() * .32, sway: Math.random() * 6.28, sp: .004 + Math.random() * .01, a: .3 + Math.random() * .5, g: Math.random() < .72 };
+    }
+    function pulse(px, py, big) {
+      var life = big ? 7000 : 3200, R = big ? 150 + Math.random() * 210 : 70;
+      for (var i = 0; i < (big ? 3 : 2); i++) rings.push({ x: px, y: py, t0: T + i * (big ? 650 : 380), life: life, R: R, a: big ? .42 : .45, g: i === 1 });
+    }
+    function diamond(px, py, s, filled) { x.beginPath(); x.moveTo(px, py - s); x.lineTo(px + s, py); x.lineTo(px, py + s); x.lineTo(px - s, py); x.closePath(); if (filled) x.fill(); else x.stroke(); }
+    function draw(dt) {
       x.clearRect(0, 0, W, H);
-      var off = (SY * .12) % (CELL * 4), i, j, p, q, d;
-      x.strokeStyle = mint;
-      for (var gx = 0, k = 0; gx <= W + CELL; gx += CELL, k++) { a(k % 4 === 0 ? .1 : .05); x.beginPath(); x.moveTo(gx + .5, 0); x.lineTo(gx + .5, H); x.stroke(); }
-      for (var gy = -CELL * 4, m = 0; gy <= H + CELL; gy += CELL, m++) { a(m % 4 === 0 ? .1 : .05); x.beginPath(); x.moveTo(0, gy + off + .5); x.lineTo(W, gy + off + .5); x.stroke(); }
-      x.strokeStyle = gold;
-      for (i = 0; i < nodes.length; i++) {
-        p = nodes[i];
-        if (!reduce) { p.x += p.vx; p.y += p.vy; if (p.x < -10) p.x = W + 10; if (p.x > W + 10) p.x = -10; if (p.y < -10) p.y = H + 10; if (p.y > H + 10) p.y = -10; }
-        for (j = i + 1; j < nodes.length; j++) { q = nodes[j]; d = Math.hypot(p.x - q.x, p.y - q.y); if (d < 150) { a((1 - d / 150) * .3); x.beginPath(); x.moveTo(p.x, p.y); x.lineTo(q.x, q.y); x.stroke(); } }
+      var i, r, k, e, a;
+      for (i = rings.length - 1; i >= 0; i--) {
+        r = rings[i]; e = (T - r.t0) / r.life; if (e < 0) continue; if (e >= 1) { rings.splice(i, 1); continue; }
+        a = r.a * (1 - e) * (1 - e); if (a < .004) continue;
+        x.strokeStyle = r.g ? gold : mint; x.lineWidth = 1.5; x.globalAlpha = a; x.beginPath(); x.arc(r.x, r.y, r.R * (1 - Math.pow(1 - e, 2.2)), 0, 6.2832); x.stroke();
       }
-      x.fillStyle = gold; a(.7);
-      for (i = 0; i < nodes.length; i++) x.fillRect(nodes[i].x - 1, nodes[i].y - 1, 2, 2);
-      if (px >= 0) {
-        x.strokeStyle = gold;
-        for (i = 0; i < nodes.length; i++) { p = nodes[i]; d = Math.hypot(p.x - px, p.y - py); if (d < 190) { a((1 - d / 190) * .45); x.beginPath(); x.moveTo(px, py); x.lineTo(p.x, p.y); x.stroke(); } }
-        a(.7); x.strokeStyle = mint; x.beginPath(); x.moveTo(px - 9, py + .5); x.lineTo(px + 10, py + .5); x.moveTo(px + .5, py - 9); x.lineTo(px + .5, py + 10); x.stroke();
-        x.fillStyle = mint; x.font = "12px " + font; x.fillText((px / CELL).toFixed(1) + ", " + ((py + SY * .12) / CELL).toFixed(1), px + 14, py - 10);
+      for (i = 0; i < sparks.length; i++) {
+        k = sparks[i];
+        if (!reduce) { k.y -= k.vy * dt / 16; k.sway += k.sp * dt / 16; k.x += Math.sin(k.sway) * .12; if (k.y < -12) sparks[i] = spark(false); }
+        x.globalAlpha = k.a * (.65 + .35 * Math.sin(k.sway * 2.3));
+        x.fillStyle = k.g ? gold : mint; x.strokeStyle = x.fillStyle;
+        diamond(k.x, k.y, k.s, k.s < 4);
       }
-      a(1);
+      x.globalAlpha = 1;
     }
-    function loop() { if (!document.hidden) draw(); requestAnimationFrame(loop); }
-    size(); draw();
-    addEventListener("resize", function () { size(); draw(); });
-    addEventListener("scroll", function () { SY = scrollY; if (reduce) draw(); }, { passive: true });
-    if (!reduce) { if (hover) addEventListener("pointermove", function (e) { px = e.clientX; py = e.clientY; }, { passive: true }); document.addEventListener("pointerleave", function () { px = -1; py = -1; }); requestAnimationFrame(loop); }
+    function loop(now) {
+      var dt = Math.min(64, now - (last || now)); last = now;
+      if (!document.hidden) { T += dt; if (T >= nextPulse) { pulse(Math.random() * W, Math.random() * H, true); nextPulse = T + 1500 + Math.random() * 1700; } draw(dt); }
+      requestAnimationFrame(loop);
+    }
+    size();
+    for (var q = 0; q < 3; q++) pulse(Math.random() * W, Math.random() * H, true);
+    if (reduce) { T = 2200; draw(0); addEventListener("resize", function () { size(); draw(0); }); return; }
+    addEventListener("resize", size);
+    if (hover) addEventListener("pointermove", function (e) { if (T - lastMove > 700) { lastMove = T; pulse(e.clientX, e.clientY, false); } }, { passive: true });
+    requestAnimationFrame(loop);
   }
   if ("requestIdleCallback" in window) requestIdleCallback(start, { timeout: 2500 }); else setTimeout(start, 1500);
 })();
